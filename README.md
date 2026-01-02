@@ -28,7 +28,7 @@ For MVP purposes, lists may also be created implicitly by the system in response
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1–5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
 
-## ML-based Recommender System
+## ML-based Recommendation System
 The system will support an explicit recommendation action initiated by the user through a guided questionnaire. The user answers a small number of discrete questions (e.g., cuisine preference, maximum distance, price sensitivity) to define a context. The recommendation engine selects candidate restaurants matching these constraints and produces a predicted preference score. The system then recommends an adjustable number (e.g., three) of options. More options means less questions required.
 
 Crucially, every recommendation is followed by explicit user feedback when the user visits and rates the restaurant within the inferred or selected context. The system records both the predicted score and the actual rating.
