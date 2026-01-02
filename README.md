@@ -45,6 +45,6 @@ The core tables—restaurants, lists, list_restaurants, ratings, and recommendat
 ## Conclusion
 This design implements contextual, user-defined comparisons that scale naturally with user history and do not lose relevance. It minimizes external API usage, avoids unnecessary data ingestion, and produces high-quality signals for machine learning based food re. The system is intentionally simple, modular, and aligned with real user behavior, addressing a concrete usability flaw in existing applications while remaining extensible.
 
-Prioritizes demonstrable engineering rigor over breadth of features, enabling a clean, functional MVP to showcase backend and ML pipeline design.
+Engineering rigor > breadth of features --> clean and functional backend and ML pipeline design.
 
 
