@@ -17,7 +17,7 @@ The system will support < 10 users, limited geographic scope (e.g., an arbitrary
 ## Data Source Strategy
 Google Places API is used strictly as a one-time data ingestion source. Data is fetched via conservative, overlapping circular Nearby Search queries over a predefined latitude/longitude rectangle covering a high-density urban area (e.g., San Francisco). Queries use a radius of 600 meters with grid-based centroids spaced to ensure coverage with overlap. Results are deduplicated by google_place_id and stored locally. No live Google API calls are made in response to user actions after ingestion. API usage is measured solely by the number of HTTP requests, so schema decisions must ensure no additional data needs to be fetched later.
 
-## Restaurant Data Model
+## Restaurant Data Model / Database Design
 Restaurants are treated as factual, location-based entities with no inherent ranking or preference information. Only attributes required for identification, mapping, and basic filtering are stored. These include an internal id, google_place_id, name, latitude, longitude, address, price_level, and business_status. Google-provided ratings and rating counts are intentionally excluded because they do not align with the project’s contextual rating model and add no value to downstream logic. They may be temporarily retained during cold-start recommendation logic but are never used for user ratings or stored long-term in the core model.
 
 ## User Context and Organization Model
@@ -28,13 +28,12 @@ For MVP purposes, lists may also be created implicitly by the system in response
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1–5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
 
-## Recommendation Functionality
-The system supports an explicit recommendation action initiated by the user through a guided questionnaire. The user answers a small number of discrete questions (e.g., cuisine preference, maximum distance, price sensitivity) to define a context. The recommendation engine selects candidate restaurants matching these constraints and produces a predicted preference score. The system then recommends a small number (e.g., three) of options.
+## ML-based Recommendation Functionality
+The system will support an explicit recommendation action initiated by the user through a guided questionnaire. The user answers a small number of discrete questions (e.g., cuisine preference, maximum distance, price sensitivity) to define a context. The recommendation engine selects candidate restaurants matching these constraints and produces a predicted preference score. The system then recommends an adjustable number (e.g., three) of options. More options means less questions required.
 
 Crucially, every recommendation is followed by explicit user feedback when the user visits and rates the restaurant within the inferred or selected context. The system records both the predicted score and the actual rating.
 
-## Machine Learning Considerations WIP
-The ML component is currently deferred but enabled by design. Because ratings are contextual, labeled, and explicit, the resulting dataset is significantly cleaner than typical restaurant recommendation data. Features may include list context, price level, distance, and user history within similar lists.
+This functionality is currently deferred but enabled by design. Because ratings are contextual, labeled, and explicit, the resulting dataset is significantly cleaner than typical restaurant recommendation data. Features may include list context, price level, distance, and user history within similar lists.
 
 A simple baseline (e.g., average rating in context) will be used initially; a lightweight regressor (e.g., linear model) may follow. Cold-start recommendations may temporarily leverage Google’s ratings but are flagged and excluded from training data. Every recommendation includes a traceable reason field (e.g., "cold_start" or "ml_prediction") to support future evaluation.
 
