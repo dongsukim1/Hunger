@@ -4,6 +4,13 @@ Existing restaurant discovery apps such as Beli rely on a single, global, relati
 
 This project aims to address that flaw by replacing global rankings with contextual, user-defined groupings in which ratings are locally meaningful even as the number of locations scales. The system is designed to minimize external API usage, store only necessary data, and generate high-quality feedback signals to fuel machine learning–based recommendations.
 
+## Tech Stack
+- Python
+- FastAPI
+- SQLite
+- Google Places API
+- scikit-learn
+
 ## Scope and Non-Goals
 The system will support < 10 users, limited geographic scope (e.g., an arbitrary chunk of the Bay Area), and one-time ingestion of third-party data. Social features, real-time synchronization, complex frontend interactions, and multi-user support are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
 
