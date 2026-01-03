@@ -1,10 +1,19 @@
 from fastapi import FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
 import os
 
 app = FastAPI(title="Contextual Restaurant Recommender API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],  # your frontend origin
+    allow_credentials=True,
+    allow_methods=["*"],  # allows POST, GET, OPTIONS, etc.
+    allow_headers=["*"],
+)
 
 DB_PATH = "../data/restaurants.db"
 
@@ -191,3 +200,27 @@ def rate_restaurant(data: RatingCreate):
     conn.commit()
     conn.close()
     return {"message": "Rating submitted"}
+
+@app.get("/lists")
+def get_lists():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, name FROM lists WHERE user_id = 1")
+    lists = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return lists
+
+@app.get("/restaurants/search")
+def search_restaurants(q: str):
+    conn = get_db()
+    cursor = conn.cursor()
+    # Simple case-insensitive partial match
+    cursor.execute("""
+        SELECT id, name FROM restaurants 
+        WHERE name LIKE ? 
+        ORDER BY name
+        LIMIT 10
+    """, (f"%{q}%",))
+    results = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return results
