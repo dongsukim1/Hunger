@@ -12,7 +12,7 @@ This project aims to address the first flaw by replacing global rankings with co
 - scikit-learn
 
 ## Scope and Non-Goals
-The system will support < 10 users, limited geographic scope (e.g., an arbitrary chunk of the Bay Area), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
+The system will support < 10 users, limited geographic scope (e.g., currently Mission, San Francisco), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
 
 ## Core Principles
 - External APIs are ingestion-only, not runtime dependencies.
