@@ -1,0 +1,24 @@
+# main.py
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from .database import init_db
+from .routes import lists, restaurants, ratings
+
+# Initialize DB on import
+init_db()
+
+app = FastAPI(title="Hunger")
+
+# CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8080"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include routers
+app.include_router(lists.router)
+app.include_router(restaurants.router)
+app.include_router(ratings.router)

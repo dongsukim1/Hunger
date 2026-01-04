@@ -1,0 +1,58 @@
+# database.py
+import sqlite3
+from fastapi import HTTPException
+
+DB_PATH = "./data/restaurants.db"  # relative to API_endpoints/
+
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA foreign_keys = ON;")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY
+        )
+    """)
+    cursor.execute("INSERT OR IGNORE INTO users (id) VALUES (1)")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS lists (
+            id INTEGER PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            deleted_at TEXT DEFAULT NULL
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS list_restaurants (
+            list_id INTEGER NOT NULL,
+            restaurant_id INTEGER NOT NULL,
+            PRIMARY KEY (list_id, restaurant_id),
+            FOREIGN KEY (list_id) REFERENCES lists(id),
+            FOREIGN KEY (restaurant_id) REFERENCES restaurants(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS ratings (
+            user_id INTEGER NOT NULL,
+            restaurant_id INTEGER NOT NULL,
+            list_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (user_id, restaurant_id, list_id),
+            FOREIGN KEY (restaurant_id) REFERENCES restaurants(id),
+            FOREIGN KEY (list_id) REFERENCES lists(id)
+        )
+    """)
+
+    conn.commit()
+    conn.close()
