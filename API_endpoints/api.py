@@ -3,9 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
+from datetime import datetime
 import os
 
-app = FastAPI(title="Contextual Restaurant Recommender API")
+app = FastAPI(title="Hunger API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -40,7 +41,8 @@ def init_db():
             id INTEGER PRIMARY KEY,
             user_id INTEGER NOT NULL,
             name TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            deleted_at TEXT DEFAULT NULL
         )
     """)
 
@@ -205,7 +207,11 @@ def rate_restaurant(data: RatingCreate):
 def get_lists():
     conn = get_db()
     cursor = conn.cursor()
-    cursor.execute("SELECT id, name FROM lists WHERE user_id = 1")
+    cursor.execute("""
+        SELECT id, name FROM lists 
+        WHERE user_id = 1 AND deleted_at IS NULL
+        ORDER BY name
+    """)
     lists = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return lists
@@ -224,3 +230,83 @@ def search_restaurants(q: str):
     results = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return results
+
+@app.delete("/lists/{list_id}")
+def soft_delete_list(list_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Verify list exists and belongs to user
+    cursor.execute("SELECT id FROM lists WHERE id = ? AND user_id = 1 AND deleted_at IS NULL", (list_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Active list not found")
+    
+    # Soft-delete: set deleted_at
+    cursor.execute(
+        "UPDATE lists SET deleted_at = ? WHERE id = ?",
+        (datetime.utcnow().isoformat(), list_id)
+    )
+    conn.commit()
+    conn.close()
+    return {"message": "List soft-deleted"}
+
+@app.post("/lists/{list_id}/restore")
+def restore_list(list_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Verify list exists and is deleted
+    cursor.execute("SELECT id FROM lists WHERE id = ? AND user_id = 1 AND deleted_at IS NOT NULL", (list_id,))
+    if not cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=404, detail="Deleted list not found")
+    
+    # Restore: clear deleted_at
+    cursor.execute("UPDATE lists SET deleted_at = NULL WHERE id = ?", (list_id,))
+    conn.commit()
+    conn.close()
+    return {"message": "List restored"}
+
+@app.get("/lists/deleted")
+def get_deleted_lists():
+    """Return recently deleted lists (for undo UI)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, deleted_at 
+        FROM lists 
+        WHERE user_id = 1 AND deleted_at IS NOT NULL
+        ORDER BY deleted_at DESC
+    """)
+    lists = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    return lists
+
+@app.post("/lists/deleted/purge")
+def purge_old_deleted_lists():
+    """Delete lists soft-deleted more than 30 days ago"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # SQLite doesn't have DATE arithmetic, so compute cutoff in Python
+    from datetime import datetime, timedelta
+    cutoff = (datetime.utcnow() - timedelta(days=30)).isoformat()
+    
+    # Get IDs to delete
+    cursor.execute("""
+        SELECT id FROM lists 
+        WHERE user_id = 1 AND deleted_at IS NOT NULL AND deleted_at < ?
+    """, (cutoff,))
+    ids_to_purge = [row[0] for row in cursor.fetchall()]
+    
+    if ids_to_purge:
+        # Delete from dependent tables first
+        placeholders = ','.join('?' * len(ids_to_purge))
+        cursor.execute(f"DELETE FROM ratings WHERE list_id IN ({placeholders})", ids_to_purge)
+        cursor.execute(f"DELETE FROM list_restaurants WHERE list_id IN ({placeholders})", ids_to_purge)
+        cursor.execute(f"DELETE FROM lists WHERE id IN ({placeholders})", ids_to_purge)
+    
+    conn.commit()
+    conn.close()
+    return {"purged_count": len(ids_to_purge)}
