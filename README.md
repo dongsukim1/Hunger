@@ -48,9 +48,9 @@ A simple baseline (e.g., average rating in context) will be used initially; a li
 The schema is designed to evolve without requiring additional Google API calls. Optional raw Google Places responses may be stored to allow future feature extraction. User-defined lists naturally support further subdivision without schema changes. Additional metadata or embeddings can be added later without invalidating existing data.
 
 The core tables—restaurants, lists, list_restaurants, ratings, and recommendations—are normalized to support correct relational semantics while allowing JSON-encoded fields for MVP simplicity in non-critical paths (e.g., list_ids in recommendations).
-<summary>
+
 ## Concluding Thoughts & Future Directions
-The design implements contextual, user-defined comparisons that scale naturally with user history and do not lose relevance. The system is intentionally simple, modular, and aligned with user behavior, addressing a concrete usability flaw in existing applications while remaining extensible. It is intentionally lacking elements that would make it a complete product. This project was created with a short timeline in mind(<2 weeks). I wanted to test my software engineering knowledge and my ability to shape ideas into logic to create a functional proof of concept. I am currently not well-versed in system design, frontend, or UI/UX so a great deal of time was spent designing, debugging, and learning what was required via AI coding assistance. 
+The design implements contextual, user-defined comparisons that scale naturally with user history and do not lose relevance. The system is intentionally simple, modular, and aligned with user behavior, addressing a concrete usability flaw in existing applications while remaining extensible. It is intentionally lacking elements that would make it a complete product. This project was created with a short timeline in mind(<2 weeks). I wanted to test my software engineering knowledge and my ability to shape ideas into logic to create a functional proof of concept. I am currently not well-versed in system design, frontend, or UI/UX so a great deal of time was spent designing, debugging, and learning what was required via AI coding assistance.
 
 Future directions could involve the creation of a simple mobile app to host the project instead of hosting it locally. 
 
@@ -68,4 +68,4 @@ Priorities(Hopefully)
 Engineering rigor > breadth of features --> clean and functional backend and ML pipeline design.
 
 If you made it this far; how'd I do?
-</summary>
+
