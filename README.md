@@ -24,13 +24,28 @@ The system will support < 10 users, limited geographic scope (e.g., an arbitrary
 ## Data Source Strategy
 Google Places API is intended to be used strictly as a one-time data ingestion source. Data is fetched via overlapping circular Nearby Search queries over a predefined latitude/longitude rectangle covering a high-density urban area (e.g., San Francisco). Queries use a radius of 100 meters with grid-based centroids spaced to guarantee coverage with overlap. Results are deduplicated by google_place_id and stored locally. No live Google API calls are made in response to user actions after ingestion. API usage is measured solely by the number of HTTP requests, so schema decisions must ensure no additional data needs to be fetched later.
 
+<details>
+  <summary>Technical Implementation & Justification details</summary>
+  TBD
+</details>
+
 ## Restaurant Data Model / Database Design
 Restaurants are treated as factual, location-based entities with no inherent ranking or preference information. Only attributes required for identification, mapping, and basic filtering are stored. These include an internal id, google_place_id, name, latitude, longitude, address, price_level, and business_status. Google-provided ratings and rating counts are intentionally excluded because they do not align with the project’s contextual rating model and add no value to downstream logic. A theoretical user could find this information elsewhere if necessary; the app should not need to provide it.
+
+<details>
+  <summary>Technical Implementation & Justification details</summary>
+  TBD
+</details>
 
 ## User Context and Organization Model
 The primary abstraction in the system is the user-defined list. Lists function similarly to playlists in Spotify. A list represents a context in which restaurants are meaningfully comparable. Examples include cuisine-based groupings, price-based groupings, geographic groupings, or occasion-based groupings. Users may create any number of lists, name them freely, and add or remove restaurants at will. Restaurants may belong to multiple lists simultaneously. The system does not impose a predefined taxonomy or hierarchy.
 
 For MVP purposes, lists may also be created implicitly by the system in response to a user’s answers to a guided questionnaire (e.g., “Chinese or Japanese, within 3km, under $30”), and named automatically for traceability.
+
+<details>
+  <summary>Technical Implementation & Justification details</summary>
+  TBD
+</details>
 
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1–5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
@@ -44,6 +59,11 @@ This functionality is currently deferred but enabled by design. Because ratings 
 
 A simple baseline (e.g., average rating in context) will be used initially; a lightweight regressor (e.g., linear model) may follow. Cold-start recommendations may temporarily leverage Google’s ratings but are flagged and excluded from training data. Every recommendation includes a traceable reason field (e.g., "cold_start" or "ml_prediction") to support future evaluation.
 
+<details>
+  <summary>Technical Implementation & Justification details</summary>
+  TBD
+</details>
+
 ## Schema Evolution and Extensibility
 The schema is designed to evolve without requiring additional Google API calls. Optional raw Google Places responses may be stored to allow future feature extraction. User-defined lists naturally support further subdivision without schema changes. Additional metadata or embeddings can be added later without invalidating existing data.
 
@@ -54,6 +74,7 @@ The design implements contextual, user-defined comparisons that scale naturally 
 
 <details>
 <summary>Future directions</summary>
+  
 The creation of a simple mobile app to host the project instead of hosting it locally. 
 
 The implementation of a very basic social features just to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations.
