@@ -52,9 +52,12 @@ The core tables—restaurants, lists, list_restaurants, ratings, and recommendat
 ## Concluding Thoughts & Future Directions
 The design implements contextual, user-defined comparisons that scale naturally with user history and do not lose relevance. The system is intentionally simple, modular, and aligned with user behavior, addressing a concrete usability flaw in existing applications while remaining extensible. It is intentionally lacking elements that would make it a complete product. This project was created with a short timeline in mind(<2 weeks). I wanted to test my software engineering knowledge and my ability to shape ideas into logic to create a functional proof of concept. I am currently not well-versed in system design, frontend, or UI/UX so a great deal of time was spent designing, debugging, and learning what was required via AI coding assistance.
 
-Future directions could involve the creation of a simple mobile app to host the project instead of hosting it locally. 
+<details>
+<summary>Future directions</summary>
+The creation of a simple mobile app to host the project instead of hosting it locally. 
 
 The implementation of a very basic social features just to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations.
+
 
 The implementation of a basic interactive map and integrating simple geospatial analysis into the machine learning components. I imagine that this would be very involved and require a complete rehauling of the current data sourcing. 
 
@@ -66,6 +69,7 @@ Substantial optimizations and improvements to the machine learning aspects. I do
 
 Priorities(Hopefully)
 Engineering rigor > breadth of features --> clean and functional backend and ML pipeline design.
+</details>
 
 If you made it this far; how'd I do?
 
