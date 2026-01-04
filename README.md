@@ -77,7 +77,9 @@ The design implements contextual, user-defined comparisons that scale naturally 
   
 The creation of a simple mobile app to host the project instead of hosting it locally. 
 
-The implementation of a very basic social features just to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations.
+The implementation of a very basic social features just to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations but none of this is available internally.
+
+More UX features that would naturally follow social features such as being able to hide lists, ratings, or being able to mix restaurants with no ratings into normal lists.
 
 The implementation of a basic interactive map and integrating simple geospatial analysis into the machine learning components. I imagine that this would be very involved, require rehauling of data collection, and be expensive to maintain.
 
