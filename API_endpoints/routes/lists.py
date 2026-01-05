@@ -84,7 +84,6 @@ def purge_old_deleted_lists():
 
 @router.post("/{list_id}/add_restaurant")
 def add_restaurant_to_list(list_id: int, data: AddRestaurantToList):
-    from ..models import AddRestaurantToList  # avoid circular import
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT id FROM lists WHERE id = ? AND user_id = 1", (list_id,))

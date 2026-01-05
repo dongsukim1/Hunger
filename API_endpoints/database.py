@@ -54,5 +54,25 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS synthetic_attributes (
+            place_id TEXT PRIMARY KEY,
+            cuisine TEXT,
+            price_tier INTEGER CHECK(price_tier IN (1, 2, 3)),
+            price_is_synthetic BOOLEAN,
+            has_outdoor_seating BOOLEAN,
+            is_vegan_friendly BOOLEAN,
+            good_for_dates BOOLEAN,
+            good_for_groups BOOLEAN,
+            quiet_ambiance BOOLEAN,
+            has_cocktails BOOLEAN,
+            FOREIGN KEY(place_id) REFERENCES restaurants(place_id)
+        )
+    """)
+
     conn.commit()
     conn.close()
+
+# For personal reference:
+# python -m http.server 8080 - to serve frontend
+# uvicorn API_endpoints.main:app --reload --port 8000 - to serve backend
