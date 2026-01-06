@@ -2,7 +2,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import init_db
-from .routes import lists, restaurants, ratings
+from .routes import lists, restaurants, ratings, recommender
 
 # Initialize DB on import
 init_db()
@@ -22,3 +22,4 @@ app.add_middleware(
 app.include_router(lists.router)
 app.include_router(restaurants.router)
 app.include_router(ratings.router)
+app.include_router(recommender.router)

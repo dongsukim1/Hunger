@@ -1,0 +1,84 @@
+# routes/recommendations.py
+from fastapi import APIRouter, HTTPException
+import uuid
+from ..recommendation_engine import load_candidate_restaurants, select_best_question, filter_candidates
+from ..utils import is_in_mission_sf
+
+router = APIRouter(prefix="/recommend", tags=["recommendations"])
+
+SESSIONS = {} # In-memory sessions: {session_id: {"candidates": [...], "questions_asked": int, "max_questions": int}}
+
+@router.post("/start")
+def start_session(
+    user_latitude: float,
+    user_longitude: float,
+    max_distance_miles: float = 3.0,
+    max_questions: int = 5
+):
+    if not is_in_mission_sf(user_latitude, user_longitude):
+        raise HTTPException(
+            status_code=400,
+            detail="Demo only available in Mission District, SF. Please adjust your location."
+        )
+    max_meters = max_distance_miles * 1609.34
+    candidates = load_candidate_restaurants(user_latitude, user_longitude, max_meters)
+    
+    if not candidates:
+        raise HTTPException(status_code=404, detail="No restaurants in range")
+    
+    session_id = str(uuid.uuid4())
+    SESSIONS[session_id] = {
+        "candidates": candidates,
+        "questions_asked": 0,
+        "max_questions": max_questions
+    }
+    
+    question_id, question_text, options = select_best_question(candidates)
+    
+    return {
+        "session_id": session_id,
+        "question": {"id": question_id, "text": question_text, "options": options},
+        "candidates_count": len(candidates)
+    }
+
+@router.post("/answer")
+def answer_question(
+    session_id: str,
+    answer: str
+):
+    if session_id not in SESSIONS:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = SESSIONS[session_id]
+    candidates = session["candidates"]
+    questions_asked = session["questions_asked"]
+    max_questions = session["max_questions"]
+    
+    # Get current question to interpret answer
+    current_q_id, _, _ = select_best_question(candidates)
+    
+    # Filter candidates based on answer
+    new_candidates = filter_candidates(candidates, current_q_id, answer)
+    
+    # Update session
+    session["candidates"] = new_candidates
+    session["questions_asked"] = questions_asked + 1
+    
+    # Check termination conditions
+    if len(new_candidates) == 1 or questions_asked + 1 >= max_questions or len(new_candidates) <= 3:
+        # Return top recommendations
+        results = [
+            {"place_id": c["place_id"], "name": c["name"], "distance_miles": round(c["distance_m"] / 1609.34, 1)}
+            for c in new_candidates[:3]
+        ]
+        # Clean up session
+        del SESSIONS[session_id]
+        return {"recommendations": results}
+    
+    # Ask next question
+    next_q_id, next_q_text, next_options = select_best_question(new_candidates)
+    return {
+        "session_id": session_id,
+        "question": {"id": next_q_id, "text": next_q_text, "options": next_options},
+        "candidates_count": len(new_candidates)
+    }

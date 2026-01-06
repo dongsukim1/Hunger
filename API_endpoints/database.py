@@ -1,6 +1,5 @@
 # database.py
 import sqlite3
-from fastapi import HTTPException
 
 DB_PATH = "./data/restaurants.db"  # relative to API_endpoints/
 
@@ -76,3 +75,6 @@ def init_db():
 # For personal reference:
 # python -m http.server 8080 - to serve frontend
 # uvicorn API_endpoints.main:app --reload --port 8000 - to serve backend
+# My target audience is people who want a way to keep accurate records of restaurants they have tried that stays accurate over time
+# and want easy recommendations.
+# The main problem I'm addressing is Beli's degradation of rating relevance with respect to time and poor recommendations.
