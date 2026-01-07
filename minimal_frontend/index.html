@@ -11,6 +11,11 @@
   <div class="layout">
     <!-- Left: Controls -->
     <div class="main-panel">
+      <!-- Recommendation Trigger -->
+      <div class="section">
+        <h2>Discover a Restaurant</h2>
+        <button id="startRecommendation">Find a Match</button>
+      </div>
       <!-- Create List -->
       <div class="section">
         <h2>Create a Context (List)</h2>
@@ -48,7 +53,12 @@
       <div id="listsContainer"></div>
     </div>
   </div>
-
+  <!-- Recommendation Modal Overlay -->
+  <div id="recommendModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center;">
+    <div id="recommendContent" style="background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+      <!-- Dynamic content inserted here -->
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

@@ -10,12 +10,11 @@ def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> fl
     return c * 6371000  # meters
 
 MISSION_SF_BBOX = {
-    "min_lat": 37.739,   # Southern edge (Cesar Chavez)
-    "max_lat": 37.770,   # Northern edge (Duboce)
-    "min_lng": -122.433, # Western edge (Divisadero)
-    "max_lng": -122.399  # Eastern edge (101 Freeway)
+  "min_lat": 37.74802895624222,
+  "max_lat": 37.769249996806195,
+  "min_lng": -122.42248265700066,
+  "max_lng": -122.40801467343661
 }
-
 def is_in_mission_sf(lat: float, lng: float) -> bool:
     return (
         MISSION_SF_BBOX["min_lat"] <= lat <= MISSION_SF_BBOX["max_lat"] and

@@ -233,8 +233,231 @@ async function restoreList(listId) {
   }
 }
 
+// Recommendation Flow 1/6/2026
+// --- Recommendation Flow State ---
+let recommendSession = null; // { sessionId, maxQuestions, minCandidates }
+
+// Mission SF bounding box (same as backend)
+const MISSION_SF_BBOX = {
+  minLat: 37.74802895624222,
+  maxLat: 37.769249996806195,
+  minLng: -122.42248265700066,
+  maxLng: -122.40801467343661
+};
+
+function isInMissionSF(lat, lng) {
+  return lat >= MISSION_SF_BBOX.minLat && lat <= MISSION_SF_BBOX.maxLat &&
+         lng >= MISSION_SF_BBOX.minLng && lng <= MISSION_SF_BBOX.maxLng;
+}
+
+// Geocoding helper (using browser built-in if possible)
+async function geocodeAddress(address) {
+  // Fallback: if Mapbox/Google not loaded, show error
+  alert("Geocoding not implemented yet. Please use 'Current Location' or enter coordinates.");
+  throw new Error("Geocoding not available");
+}
+
+// Show modal with content
+async function showRecommendModal(html) {
+  document.getElementById('recommendContent').innerHTML = html;
+  document.getElementById('recommendModal').style.display = 'flex';
+}
+
+// Close modal
+async function closeRecommendModal() {
+  document.getElementById('recommendModal').style.display = 'none';
+  recommendSession = null;
+}
+
+// Start the flow
+async function startRecommendationFlow() {
+  const html = `
+    <h3>Where are you?</h3>
+    <p style="font-size:0.9rem; color:#666;">Demo limited to Mission District, San Francisco</p>
+    
+    <div style="margin:1rem 0;">
+      <input type="text" id="addressInput" placeholder="e.g., 24th St & Valencia, SF" style="width:70%;" />
+      <button onclick="useCurrentLocation()" style="margin-left:0.5rem;">Use Current Location</button>
+    </div>
+    
+    <div style="margin:1rem 0;">
+      <label>Max distance: <span id="distanceValue">3</span> miles</label><br>
+      <input type="range" id="distanceSlider" min="1" max="5" value="3" 
+             oninput="document.getElementById('distanceValue').textContent = this.value" />
+    </div>
+    
+    <div style="margin-top:1.5rem;">
+      <button onclick="submitLocation()" style="background:#28a745;">Start</button>
+      <button onclick="closeRecommendModal()" style="background:#6c757d; margin-left:0.5rem;">Cancel</button>
+    </div>
+    <div id="locationError" style="color:red; margin-top:0.5rem; min-height:1.2rem;"></div>
+  `;
+  showRecommendModal(html);
+}
+
+// Geolocation
+async function useCurrentLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('locationError').textContent = "Geolocation not supported.";
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (position) => {
+      const { latitude, longitude } = position.coords;
+      if (!isInMissionSF(latitude, longitude)) {
+        document.getElementById('locationError').textContent = 
+          "You're outside the demo area (Mission District). Please move or enter an address nearby.";
+        return;
+      }
+      // Store and auto-fill for debugging (optional)
+      document.getElementById('addressInput').value = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+      // Proceed with these coords
+      startRecommendationSession(latitude, longitude);
+    },
+    (error) => {
+      console.error(error);
+      document.getElementById('locationError').textContent = "Failed to get location. Please enter an address.";
+    }
+  );
+}
+
+// Submit location (from address or coords)
+async function submitLocation() {
+  const input = document.getElementById('addressInput').value.trim();
+  const distance = parseInt(document.getElementById('distanceSlider').value);
+  
+  // If input looks like coords
+  const coordMatch = input.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/);
+  if (coordMatch) {
+    const lat = parseFloat(coordMatch[1]);
+    const lng = parseFloat(coordMatch[2]);
+    if (!isInMissionSF(lat, lng)) {
+      document.getElementById('locationError').textContent = "Location outside Mission District.";
+      return;
+    }
+    startRecommendationSession(lat, lng, distance);
+    return;
+  }
+  
+  // Otherwise, treat as address → geocode (stub for now)
+  if (input) {
+    document.getElementById('locationError').textContent = "Address geocoding not implemented. Use 'Current Location' or coordinates.";
+    return;
+  }
+  
+  document.getElementById('locationError').textContent = "Please enter a location.";
+}
+
+// Start session with backend
+async function startRecommendationSession(lat, lng, maxDistanceMiles = 3) {
+  try {
+    const res = await fetch(`${API_BASE}/recommend/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        user_latitude: lat, 
+        user_longitude: lng, 
+        max_distance_miles: maxDistanceMiles,
+        max_questions: 5  // default; will become configurable later
+      })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to start session");
+    }
+    
+    const data = await res.json();
+    recommendSession = { 
+      sessionId: data.session_id,
+      maxQuestions: 5,
+      minCandidates: 3
+    };
+    
+    showQuestion(data.question, data.candidates_count);
+  } catch (e) {
+    document.getElementById('locationError').textContent = `Error: ${e.message}`;
+  }
+}
+
+// Show a question
+function showQuestion(question, count) {
+  const optionsHtml = question.options.map(opt => 
+    `<button onclick="submitAnswer('${opt}')" style="margin:0.25rem;">${opt}</button>`
+  ).join('');
+  
+  const html = `
+    <h3>${question.text}</h3>
+    <p style="font-size:0.9rem; color:#666;">${count} options remaining</p>
+    <div style="margin:1.5rem 0;">${optionsHtml}</div>
+    <button onclick="closeRecommendModal()" style="background:#6c757d;">Cancel</button>
+    <div id="answerError" style="color:red; margin-top:0.5rem; min-height:1.2rem;"></div>
+  `;
+  showRecommendModal(html);
+}
+
+// Submit answer
+async function submitAnswer(answer) {
+  if (!recommendSession) return;
+  
+  try {
+    const res = await fetch(`${API_BASE}/recommend/answer`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        session_id: recommendSession.sessionId,
+        answer: answer
+      })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to process answer");
+    }
+    
+    const data = await res.json();
+    
+    // Check if complete
+    if (data.recommendations) {
+      showRecommendations(data.recommendations);
+    } else if (data.question) {
+      showQuestion(data.question, data.candidates_count);
+    } else {
+      throw new Error("Unexpected response");
+    }
+  } catch (e) {
+    document.getElementById('answerError').textContent = `Error: ${e.message}`;
+  }
+}
+
+// Show final recommendations
+function showRecommendations(recs) {
+  const recsHtml = recs.map(r => `
+    <div style="padding:0.75rem; border-bottom:1px solid #eee;">
+      <strong>${r.name}</strong><br>
+      <span style="color:#666;">${r.cuisine} • $${'$'.repeat(r.price_tier || 2)} • ${r.distance_miles} miles</span>
+    </div>
+  `).join('');
+  
+  const html = `
+    <h3>We found your match!</h3>
+    ${recsHtml}
+    <div style="margin-top:1.5rem;">
+      <button onclick="closeRecommendModal()" style="background:#28a745;">Done</button>
+      <!-- Future: add feedback UI here -->
+    </div>
+  `;
+  showRecommendModal(html);
+}
+
 // --- Event Listeners ---
 document.addEventListener('DOMContentLoaded', () => {
   renderLists();
   document.getElementById('restaurantSearch').addEventListener('input', searchRestaurants);
+  
+  // Recommendation flow button
+  const recommendButton = document.getElementById('startRecommendation');
+  if (recommendButton) {
+    recommendButton.addEventListener('click', startRecommendationFlow);
+  }
 });
