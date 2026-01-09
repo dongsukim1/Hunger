@@ -328,7 +328,7 @@ async function startRecommendationFlow() {
     
     <div style="margin:1rem 0;">
       <label>Max distance: <span id="distanceValue">3</span> miles</label><br>
-      <input type="range" id="distanceSlider" min="1" max="5" value="3" 
+      <input type="range" id="distanceSlider" min="1" max="5" value="3.0" 
              oninput="document.getElementById('distanceValue').textContent = this.value" />
     </div>
     
@@ -372,7 +372,7 @@ async function useCurrentLocation() {
 // Submit location (from address or coords)
 async function submitLocation() {
   const input = document.getElementById('addressInput').value.trim();
-  const distance = parseInt(document.getElementById('distanceSlider').value) || 3;
+  const distance = parseFloat(document.getElementById('distanceSlider').value) || 3.0;
   const errorEl = document.getElementById('locationError');
   errorEl.textContent = ""; // clear previous error
 
@@ -413,8 +413,15 @@ async function submitLocation() {
 }
 
 // Start session with backend
-async function startRecommendationSession(lat, lng, maxDistanceMiles = 3) {
+async function startRecommendationSession(lat, lng, maxDistanceMiles = 3.0) {
   try {
+      const payload = { 
+      user_latitude: lat, 
+      user_longitude: lng, 
+      max_distance_miles: maxDistanceMiles,
+      max_questions: 5
+    };
+    console.log("Sending to /recommend/start:", payload); // DEBUG
     const res = await fetch(`${API_BASE}/recommend/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
