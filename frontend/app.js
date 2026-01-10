@@ -415,13 +415,6 @@ async function submitLocation() {
 // Start session with backend
 async function startRecommendationSession(lat, lng, maxDistanceMiles = 3.0) {
   try {
-      const payload = { 
-      user_latitude: lat, 
-      user_longitude: lng, 
-      max_distance_miles: maxDistanceMiles,
-      max_questions: 5
-    };
-    console.log("Sending to /recommend/start:", payload); // DEBUG
     const res = await fetch(`${API_BASE}/recommend/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
