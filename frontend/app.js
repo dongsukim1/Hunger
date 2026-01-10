@@ -506,7 +506,7 @@ function showRecommendations(recs) {
   const recsHtml = recs.map(r => `
     <div style="padding:0.75rem; border-bottom:1px solid #eee;">
       <strong>${r.name}</strong><br>
-      <span style="color:#666;">${r.cuisine} • $${'$'.repeat(r.price_tier || 2)} • ${r.distance_miles} miles</span>
+      <span style="color:#666;">${r.cuisine} • ${'$'.repeat(r.price_tier)} • ${r.distance_miles} miles</span>
     </div>
   `).join('');
   

@@ -9,12 +9,12 @@ def load_candidate_restaurants(user_lat: float, user_lng: float, max_meters: flo
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("""
-        SELECT r.place_id, r.name, r.latitude, r.longitude,
+        SELECT r.id, r.name, r.latitude, r.longitude,
             s.cuisine, s.price_tier, s.has_outdoor_seating,
             s.is_vegan_friendly, s.good_for_dates,
             s.good_for_groups, s.quiet_ambiance, s.has_cocktails
         FROM restaurants r
-        JOIN synthetic_attributes s ON r.place_id = s.place_id
+        JOIN synthetic_attributes s ON r.id = s.place_id
         WHERE r.business_status = 'OPERATIONAL'
     """)
     

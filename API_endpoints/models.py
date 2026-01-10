@@ -25,7 +25,7 @@ class RatingCreate(BaseModel):
 class RecommendationRequest(BaseModel):
     user_latitude: float
     user_longitude: float
-    max_distance_miles: float  # e.g., 3.0
+    max_distance_miles: float = 3.0 # e.g., 3.0
     max_questions: int = 5
 
 class QuestionResponse(BaseModel):
@@ -37,3 +37,7 @@ class RecommendationSession(BaseModel):
     session_id: str
     current_question: QuestionResponse
     candidates_count: int
+
+class AnswerRequest(BaseModel):
+    session_id: str
+    answer: str

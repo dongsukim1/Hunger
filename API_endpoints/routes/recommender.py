@@ -1,27 +1,23 @@
-# routes/recommendations.py
+# routes/recommender.py
 from fastapi import APIRouter, HTTPException
 import uuid
 from ..recommendation_engine import load_candidate_restaurants, select_best_question, filter_candidates
 from ..utils import is_in_mission_sf
+from ..models import RecommendationRequest, AnswerRequest 
 
 router = APIRouter(prefix="/recommend", tags=["recommendations"])
 
 SESSIONS = {} # In-memory sessions: {session_id: {"candidates": [...], "questions_asked": int, "max_questions": int}}
 
 @router.post("/start")
-def start_session(
-    user_latitude: float,
-    user_longitude: float,
-    max_distance_miles: float = 3.0,
-    max_questions: int = 5
-):
-    if not is_in_mission_sf(user_latitude, user_longitude):
+def start_session(request: RecommendationRequest): 
+    if not is_in_mission_sf(request.user_latitude, request.user_longitude):
         raise HTTPException(
             status_code=400,
             detail="Demo only available in Mission District, SF. Please adjust your location."
         )
-    max_meters = max_distance_miles * 1609.34
-    candidates = load_candidate_restaurants(user_latitude, user_longitude, max_meters)
+    max_meters = request.max_distance_miles * 1609.34
+    candidates = load_candidate_restaurants(request.user_latitude, request.user_longitude, max_meters)
     
     if not candidates:
         raise HTTPException(status_code=404, detail="No restaurants in range")
@@ -30,7 +26,7 @@ def start_session(
     SESSIONS[session_id] = {
         "candidates": candidates,
         "questions_asked": 0,
-        "max_questions": max_questions
+        "max_questions": request.max_questions
     }
     
     question_id, question_text, options = select_best_question(candidates)
@@ -42,10 +38,9 @@ def start_session(
     }
 
 @router.post("/answer")
-def answer_question(
-    session_id: str,
-    answer: str
-):
+def answer_question(request: AnswerRequest):
+    session_id = request.session_id
+    answer = request.answer
     if session_id not in SESSIONS:
         raise HTTPException(status_code=404, detail="Session not found")
     
@@ -68,7 +63,12 @@ def answer_question(
     if len(new_candidates) == 1 or questions_asked + 1 >= max_questions or len(new_candidates) <= 3:
         # Return top recommendations
         results = [
-            {"place_id": c["place_id"], "name": c["name"], "distance_miles": round(c["distance_m"] / 1609.34, 1)}
+            {
+                "name": c["name"],
+                "cuisine": c["cuisine"],
+                "price_tier": c["price_tier"],
+                "distance_miles": round(c["distance_m"] / 1609.34, 1)
+            }
             for c in new_candidates[:3]
         ]
         # Clean up session
