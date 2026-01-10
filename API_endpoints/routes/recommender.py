@@ -26,7 +26,8 @@ def start_session(request: RecommendationRequest):
     SESSIONS[session_id] = {
         "candidates": candidates,
         "questions_asked": 0,
-        "max_questions": request.max_questions
+        "max_questions": request.max_questions,
+        "list_id": request.list_id
     }
     
     question_id, question_text, options = select_best_question(candidates)
@@ -64,6 +65,7 @@ def answer_question(request: AnswerRequest):
         # Return top recommendations
         results = [
             {
+                "id": c["id"], 
                 "name": c["name"],
                 "cuisine": c["cuisine"],
                 "price_tier": c["price_tier"],

@@ -3,6 +3,8 @@ const API_BASE = `${window.location.protocol}//${window.location.hostname}:8000`
 let restaurantId = null;
 let recommendSession = null; // { sessionId, maxQuestions, minCandidates }
 let addressDebounceTimer = null;
+let todaysDiscoveryListId = null; // cache to avoid repeated fetches
+
 const MAPBOX_PUBLIC_TOKEN = "pk.eyJ1IjoiYXNkYXNkYS1hc2Rhc2RhIiwiYSI6ImNtazV5ZnIzZTBvZnozZnExOXFtOXNmeGwifQ.ksZ3_paAz6QE6uhh5fsDnw"; // Public token for geocoding/autocomplete with all fine-grained permissions disabled. No vulnerabilities. URL restrictions in place so only works on local dev envs.
 // THIS IS SAFE TO EXPOSE PUBLICLY AS IT HAS ALL EXPLOITABLE PERMISSIONS DISABLED AND URL RESTRICTIONS SET UP IN MAPBOX DASHBOARD.
 
@@ -147,9 +149,11 @@ async function renderLists() {
     // Auto-purge old deleted lists
     await fetch(`${API_BASE}/lists/deleted/purge`, { method: 'POST' });
 
-    // Fetch active lists
+    // Fetch active lists and hide internal "Discovery:" lists from user view
     const activeRes = await fetch(`${API_BASE}/lists`);
-    const activeLists = await activeRes.json();
+    const activeLists = (await activeRes.json()).filter(list => 
+      !list.name.startsWith("Discovery:")
+    );
 
     // Fetch deleted lists
     const deletedRes = await fetch(`${API_BASE}/lists/deleted`);
@@ -415,14 +419,17 @@ async function submitLocation() {
 // Start session with backend
 async function startRecommendationSession(lat, lng, maxDistanceMiles = 3.0) {
   try {
-    const res = await fetch(`${API_BASE}/recommend/start`, {
+      // Get or create TODAY'S discovery list
+      const discoveryListId = await todaysDiscoveryList();
+      const res = await fetch(`${API_BASE}/recommend/start`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
         user_latitude: lat, 
         user_longitude: lng, 
         max_distance_miles: maxDistanceMiles,
-        max_questions: 5  // default; will become configurable later
+        max_questions: 5,
+        list_id: discoveryListId
       })
     });
     
@@ -434,6 +441,7 @@ async function startRecommendationSession(lat, lng, maxDistanceMiles = 3.0) {
     const data = await res.json();
     recommendSession = { 
       sessionId: data.session_id,
+      listId: discoveryListId,
       maxQuestions: 5,
       minCandidates: 3
     };
@@ -496,20 +504,31 @@ async function submitAnswer(answer) {
 
 // Show final recommendations
 function showRecommendations(recs) {
+   if (recommendSession) {
+    recommendSession.recommendations = recs;
+  }
+
   const recsHtml = recs.map(r => `
-    <div style="padding:0.75rem; border-bottom:1px solid #eee;">
+    <div style="padding:0.75rem; border-bottom:1px solid #eee; position:relative;">
       <strong>${r.name}</strong><br>
-      <span style="color:#666;">${r.cuisine} • ${'$'.repeat(r.price_tier)} • ${r.distance_miles} miles</span>
+      <span style="color:#666;">${r.cuisine} • ${'$'.repeat(r.price_tier || 2)} • ${r.distance_miles} miles</span>
+      
+      <!-- Per-restaurant rating -->
+      <div style="margin-top:0.5rem; display:flex; gap:0.25rem;">
+        <button onclick="submitRestaurantFeedback(${r.id}, 1)" style="flex:1; background:#ff6b6b; font-size:0.8rem;">★</button>
+        <button onclick="submitRestaurantFeedback(${r.id}, 2)" style="flex:1; background:#ffa726; font-size:0.8rem;">★★</button>
+        <button onclick="submitRestaurantFeedback(${r.id}, 3)" style="flex:1; background:#ffd93d; font-size:0.8rem;">★★★</button>
+        <button onclick="submitRestaurantFeedback(${r.id}, 4)" style="flex:1; background:#a5d6a7; font-size:0.8rem;">★★★★</button>
+        <button onclick="submitRestaurantFeedback(${r.id}, 5)" style="flex:1; background:#66bb6a; font-size:0.8rem;">★★★★★</button>
+      </div>
+      <div id="feedbackResult-${r.id}" style="min-height:1.2rem; margin-top:0.25rem; font-size:0.85rem;"></div>
     </div>
   `).join('');
   
   const html = `
     <h3>We found your match!</h3>
     ${recsHtml}
-    <div style="margin-top:1.5rem;">
-      <button onclick="closeRecommendModal()" style="background:#28a745;">Done</button>
-      <!-- Future: add feedback UI here -->
-    </div>
+    <button onclick="closeRecommendModal()" style="background:#6c757d; margin-top:1rem;">Close</button>
   `;
   showRecommendModal(html);
 }
@@ -565,6 +584,95 @@ async function handleAddressInput() {
       suggestionsDiv.style.display = 'none';
     }
   }, 750); // 750ms debounce. Intentionally very slow to reduce API calls. I only get a 1000/month for free ):
+}
+
+// 1/10/26 Feedback implementation
+// Return list name for today mm/dd/yyyy
+function getToday() {
+  const today = new Date();
+  return `Discovery: ${today.toLocaleDateString('en-US', { 
+    month: 'short', 
+    day: 'numeric', 
+    year: 'numeric' 
+  })}`;
+  // Example: "Discovery: Jan 11, 2026"
+}
+
+// Get or create today's discovery list
+async function todaysDiscoveryList() {
+  if (todaysDiscoveryListId) {
+    return todaysDiscoveryListId;
+  }
+
+  const listName = getToday();
+  
+  try {
+    // Step 1: Fetch all lists
+    const res = await fetch(`${API_BASE}/lists`);
+    const lists = await res.json();
+
+    // Step 2: Check if today's discovery list exists
+    const existing = lists.find(list => list.name === listName);
+    if (existing) {
+      todaysDiscoveryListId = existing.id;
+      return existing.id;
+    }
+    
+    // Step 3: Create new list
+    const createRes = await fetch(`${API_BASE}/lists`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: listName })
+    });
+    const newList = await createRes.json();
+    todaysDiscoveryListId = newList.id;
+    return newList.id;
+    
+  } catch (e) {
+    console.error("Failed to get/create discovery list:", e);
+    throw new Error("Could not prepare feedback context");
+  }
+}
+
+async function submitRestaurantFeedback(restaurantId, rating) {
+  if (!recommendSession?.listId) {
+    alert("Session error: no context");
+    return;
+  }
+
+  const feedbackResultEl = document.getElementById(`feedbackResult-${restaurantId}`);
+  if (!feedbackResultEl) return;
+
+  feedbackResultEl.innerHTML = "Saving...";
+  feedbackResultEl.style.color = "#007bff";
+
+  try {
+    const response = await fetch(`${API_BASE}/rate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        restaurant_id: restaurantId,
+        list_id: recommendSession.listId,
+        rating: rating
+      })
+    });
+
+    if (response.ok) {
+      feedbackResultEl.innerHTML = "✅ Saved!";
+      feedbackResultEl.style.color = "green";
+      
+      // Optional: disable buttons after rating
+      const buttons = feedbackResultEl.parentElement.querySelectorAll('button');
+      buttons.forEach(btn => btn.disabled = true);
+    } else {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to save");
+    }
+  } catch (e) {
+    console.error("Rating error:", e);
+    feedbackResultEl.innerHTML = `❌ ${e.message}`;
+    feedbackResultEl.style.color = "red";
+  }
 }
 
 // --- Event Listeners ---

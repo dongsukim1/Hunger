@@ -27,6 +27,7 @@ class RecommendationRequest(BaseModel):
     user_longitude: float
     max_distance_miles: float = 3.0 # e.g., 3.0
     max_questions: int = 5
+    list_id: int = Optional[int]
 
 class QuestionResponse(BaseModel):
     question_id: str
