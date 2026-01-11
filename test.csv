@@ -1,0 +1,119 @@
+user_id,context,restaurant_id,rating
+user_000,Weekend Brunch,97,4
+user_000,Weekend Brunch,271,4
+user_000,Weekend Brunch,16,5
+user_000,Weekend Brunch,28,4
+user_000,Weekend Brunch,165,5
+user_000,Date Night,86,5
+user_000,Date Night,27,4
+user_000,Date Night,76,5
+user_000,Date Night,154,5
+user_000,Date Night,166,5
+user_000,Date Night,172,5
+user_000,Date Night,288,5
+user_000,Late Night Eats,86,5
+user_000,Late Night Eats,27,3
+user_000,Late Night Eats,76,4
+user_000,Late Night Eats,154,4
+user_000,Quick Lunch,35,4
+user_000,Quick Lunch,279,4
+user_000,Quick Lunch,332,4
+user_000,Quick Lunch,35,4
+user_000,Quick Lunch,279,4
+user_000,Quick Lunch,332,4
+user_000,Quick Lunch,70,3
+user_000,Quick Lunch,180,4
+user_001,Date Night,148,3
+user_001,Weekend Brunch,82,5
+user_001,Weekend Brunch,88,5
+user_001,Weekend Brunch,155,5
+user_001,Late Night Eats,82,5
+user_001,Late Night Eats,88,4
+user_001,Late Night Eats,155,4
+user_001,Date Night,148,4
+user_001,Quick Lunch,82,5
+user_001,Quick Lunch,88,4
+user_001,Quick Lunch,155,4
+user_001,Quick Lunch,6,4
+user_001,Quick Lunch,73,4
+user_001,Weekend Brunch,148,4
+user_001,Late Night Eats,82,5
+user_001,Late Night Eats,88,4
+user_001,Late Night Eats,155,4
+user_001,Weekend Brunch,148,4
+user_001,Weekend Brunch,148,4
+user_002,Late Night Eats,137,5
+user_002,Late Night Eats,200,5
+user_002,Late Night Eats,237,5
+user_002,Late Night Eats,62,4
+user_002,Late Night Eats,175,4
+user_002,Late Night Eats,199,4
+user_002,Quick Lunch,21,4
+user_002,Quick Lunch,84,4
+user_002,Quick Lunch,113,4
+user_002,Quick Lunch,77,4
+user_002,Quick Lunch,81,5
+user_002,Quick Lunch,333,4
+user_002,Group Hang,137,5
+user_002,Group Hang,200,5
+user_002,Group Hang,237,5
+user_002,Quick Lunch,42,5
+user_002,Quick Lunch,85,4
+user_002,Quick Lunch,170,4
+user_002,Group Hang,137,5
+user_002,Group Hang,200,5
+user_002,Group Hang,237,5
+user_002,Weekend Brunch,243,5
+user_002,Weekend Brunch,316,4
+user_002,Group Hang,42,5
+user_002,Group Hang,85,4
+user_002,Group Hang,170,5
+user_002,Late Night Eats,173,4
+user_003,Date Night,137,5
+user_003,Date Night,200,5
+user_003,Date Night,237,5
+user_003,Date Night,21,4
+user_003,Date Night,84,4
+user_003,Date Night,113,5
+user_003,Group Hang,23,5
+user_003,Group Hang,157,5
+user_003,Group Hang,189,5
+user_003,Weekend Brunch,42,5
+user_003,Weekend Brunch,85,5
+user_003,Weekend Brunch,170,5
+user_003,Group Hang,2,5
+user_003,Group Hang,223,5
+user_003,Group Hang,278,5
+user_003,Date Night,137,5
+user_003,Date Night,200,5
+user_003,Date Night,237,5
+user_003,Weekend Brunch,100,5
+user_003,Weekend Brunch,201,5
+user_003,Late Night Eats,42,4
+user_003,Late Night Eats,85,4
+user_003,Late Night Eats,170,4
+user_003,Date Night,137,5
+user_003,Date Night,200,5
+user_003,Date Night,237,5
+user_003,Group Hang,2,5
+user_003,Group Hang,223,5
+user_003,Group Hang,278,5
+user_004,Late Night Eats,169,4
+user_004,Quick Lunch,31,4
+user_004,Quick Lunch,177,3
+user_004,Quick Lunch,242,4
+user_004,Group Hang,135,5
+user_004,Weekend Brunch,5,4
+user_004,Weekend Brunch,210,5
+user_004,Weekend Brunch,39,5
+user_004,Weekend Brunch,244,5
+user_004,Weekend Brunch,292,4
+user_004,Weekend Brunch,114,5
+user_004,Weekend Brunch,114,5
+user_004,Date Night,114,5
+user_004,Quick Lunch,31,4
+user_004,Quick Lunch,177,3
+user_004,Quick Lunch,242,4
+user_004,Quick Lunch,31,4
+user_004,Quick Lunch,177,3
+user_004,Quick Lunch,242,4
