@@ -50,14 +50,14 @@ For MVP purposes, lists may also be created implicitly by the system in response
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1–5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
 
-## ML-based Recommendation System
-The system will support an explicit recommendation action initiated by the user through a guided questionnaire. The user answers a small number of discrete questions (e.g., cuisine preference, maximum distance, price sensitivity) to define a context. The recommendation engine selects candidate restaurants matching these constraints and produces a predicted preference score. The system then recommends an adjustable number (e.g., three) of options. More options means less questions required.
+## ML-guided Recommendation System
+The system will support an explicit recommendation action initiated by the user through a guided questionnaire. The user answers a small adjustable number of discrete questions (e.g., cuisine preference, maximum distance, preferred price ) to define a context. The recommendation engine selects candidate restaurants matching these constraints and produces a predicted preference score. The system then recommends an adjustable number (e.g., three) of options. More options means less questions required.
 
-Crucially, every recommendation is followed by explicit user feedback when the user visits and rates the restaurant within the inferred or selected context. The system records both the predicted score and the actual rating.
+Crucially, every recommendation is followed by explicit user feedback when the user visits and rates the restaurant within the inferred or selected context. 
 
-This functionality is currently deferred but enabled by design. Because ratings are contextual, labeled, and explicit, the resulting dataset is significantly cleaner than typical restaurant recommendation data. Features may include list context, price level, distance, and user history within similar lists.
+This functionality is currently deferred but it was designed to eventually support it. Because ratings are contextual, labeled, and explicit, the resulting dataset should be cleaner than typical restaurant recommendation data. Features may include list context, price level, distance, and user history within similar lists.
 
-A simple baseline (e.g., average rating in context) will be used initially; a lightweight regressor (e.g., linear model) may follow. Cold-start recommendations may temporarily leverage Google’s ratings but are flagged and excluded from training data. Every recommendation includes a traceable reason field (e.g., "cold_start" or "ml_prediction") to support future evaluation.
+A simple baseline will handle cold-start recommendations via a heuristic based question selector but as model performance increases we will defer recommendations to the model. 
 
 <details>
   <summary>Technical Implementation & Justification details</summary>
