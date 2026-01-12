@@ -4,7 +4,6 @@ import sys
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from .routes.misc_housekeeping import purge_old_discovery_sessions
 from datetime import datetime, timedelta, timezone
 from .database import get_db
 
