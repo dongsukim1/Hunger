@@ -12,6 +12,10 @@ This project aims to address the first flaw by replacing global rankings with co
 - scikit-learn
 - Javascript/css/html
 
+### Setup
+Create/open a virtual environment (I used conda) install uvicorn, FastAPI, sklearn, sqlite3, pydantic if they are not already installed via pip. 
+Navigate to frontend directory and run python -m http.server 8080 for the frontend. For the backend, open the venv to the root directory and run uvicorn API_endpoints.main:app --reload --port 8000.
+
 ## Scope and Non-Goals
 The system will support < 10 users, limited geographic scope (e.g., currently Mission, San Francisco), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
 
