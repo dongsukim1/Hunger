@@ -15,9 +15,7 @@ def cleanup_lists():
 def cleanup_invisible_ratings():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM ratings WHERE list_id IS 5") # 5 is hardcoded invisible list id
-    cursor.execute("DROP TABLE IF EXISTS processed_ratings")
-    cursor.execute("DROP TABLE IF EXISTS processed_contexts")  # Reset autoincrement
+    cursor.execute("DELETE FROM lists WHERE user_id IS 1") 
     conn.commit()
     conn.close()
 
