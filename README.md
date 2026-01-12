@@ -104,10 +104,3 @@ The current data sourcing method is a huge source of potential improvements. The
 The database implementation is also inherently problematic for scalability even if currently acceptable given the scope. It would eventually need to be imported to something like PostgreSQL and the underlying backend would need to move away from its current monolithic design towards something like microservices. The algorithm for calculating relative distances used in the recommender system is also unsustainable at scale. Distance filtering uses brute-force haversine, acceptable for N < 1,000. At scale, this would be replaced by geospatial indexing (e.g., H3 or PostGIS).
 
 Substantial optimizations and improvements to the machine learning aspects. I don't have industry experience designing systems that scale to millions of users nor handling such data. The testing of the recommendation features was difficult and likely subject to my own biases. The inspiration behind the questionnaire feature was Akinator in the hopes that it would be able to "guess" locations that users might like by just asking some questions but I realized that active learning is only practical and useful at scale.
-
-Priorities(Hopefully)
-Engineering rigor > breadth of features --> clean and functional backend and ML pipeline design.
-</details>
-
-If you made it this far; how'd I do?
-
