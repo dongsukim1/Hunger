@@ -68,13 +68,25 @@ def init_db():
             FOREIGN KEY(place_id) REFERENCES restaurants(place_id)
         )
     """)
-
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS processed_ratings (
+            user_id INTEGER NOT NULL,
+            restaurant_id INTEGER NOT NULL,
+            list_id INTEGER NOT NULL,
+            processed_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (user_id, restaurant_id, list_id),
+            FOREIGN KEY (user_id, restaurant_id, list_id) 
+                REFERENCES ratings(user_id, restaurant_id, list_id)
+        )
+    """)    
     conn.commit()
     conn.close()
 
 # For personal reference:
 # python -m http.server 8080 - to serve frontend
 # uvicorn API_endpoints.main:app --reload --port 8000 - to serve backend
-# My target audience is people who want a way to keep accurate records of restaurants they have tried that stays accurate over time
+# python -m data.ML_recs.train_model - to train model for very first time
+# python -m data.generate --seed 42 --num-users 500 --sessions-per-user 15 --synthetic_ratings1.csv -- very first synthetic_ratings generations
+# My target audience is people who want a way to keep accurate records of visited restaurants.
 # and want easy recommendations.
 # The main problem I'm addressing is Beli's degradation of rating relevance with respect to time and poor recommendations.

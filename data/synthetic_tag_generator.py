@@ -114,7 +114,7 @@ def generate_synthetic_attributes(operational_restaurants, cuisine_pool):
         ))
     return synth_records
 
-if __name__ == "__main__":
+def main():
     # Set random seed for reproducibility
     random.seed(RANDOM_SEED)
 
@@ -139,3 +139,6 @@ if __name__ == "__main__":
     conn.commit()
     print(f"Inserted {len(synth_records)} synthetic records.")
     conn.close()
+
+if __name__ == "__main__":
+    main()

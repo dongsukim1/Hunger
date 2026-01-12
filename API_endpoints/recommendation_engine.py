@@ -3,6 +3,12 @@ from typing import List, Dict, Any
 from .utils import haversine_distance
 from typing import Set
 from .database import get_db
+import os
+import xgboost as xgb
+
+MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "rating_model.json")
+xgb_model = xgb.XGBRegressor()
+xgb_model.load_model(MODEL_PATH)
 
 def load_candidate_restaurants(user_lat: float, user_lng: float, max_meters: float) -> List[Dict]:
     """Load operational restaurants within distance (meters) of user."""
@@ -93,3 +99,92 @@ def filter_candidates(candidates: List[Dict], question_id: str, answer: str) -> 
         return [c for c in candidates if c["cuisine"] == answer]
     
     return candidates  # fallback
+
+# 1/11/26 ML-guided recommendations WIP 
+
+def build_restaurant_features(restaurant: dict, context: str) -> list:
+    """
+    Build feature vector matching training format.
+    Order must match XGBoost's expected features.
+    """
+    features = []
+    
+    # Price tier (int)
+    features.append(float(restaurant["price_tier"]))
+    
+    # Cuisine one-hot encoding
+    cuisines = [
+        "mexican", "italian", "american", "chinese", "japanese",
+        "thai", "indian", "french", "mediterranean", "korean",
+        "vietnamese", "spanish", "greek", "peruvian", "ethiopian"
+    ]
+    for c in cuisines:
+        features.append(1.0 if restaurant["cuisine"] == c else 0.0)
+    
+    # Boolean attributes
+    bool_attrs = [
+        "has_outdoor_seating", "good_for_dates", "is_vegan_friendly",
+        "good_for_groups", "quiet_ambiance", "has_cocktails"
+    ]
+    for attr in bool_attrs:
+        features.append(1.0 if restaurant.get(attr, False) else 0.0)
+    
+    # Context one-hot
+    contexts = ["Date Night", "Group Hang", "Quick Lunch", "Weekend Brunch", "Late Night Eats"]
+    for ctx in contexts:
+        features.append(1.0 if context == ctx else 0.0)
+    
+    return features
+
+def select_best_question_ml(candidates: List[Dict], session) -> tuple:
+    """
+    Select question that maximizes expected rating of top recommendation.
+    """
+    if len(candidates) <= 1:
+        return ("complete", "We found your match!", [])
+    
+    question_order = [
+    "price_tier", "cuisine", "has_outdoor_seating", "good_for_dates",
+    "is_vegan_friendly", "good_for_groups", "quiet_ambiance", "has_cocktails"
+    ]
+    asked_attrs = set(session["questions_asked"]) 
+    
+    best_attr = None
+    best_expected_rating = -1
+    
+    for attr in question_order:
+        if attr in asked_attrs:
+            continue
+            
+        # Get values that exist in current candidates
+        unique_vals = {c[attr] for c in candidates}
+        if len(unique_vals) <= 1:
+            continue
+        
+        total_rating = 0
+        valid_answers = 0  # ← track how many answers lead to non-empty sets
+        
+        for val in unique_vals:
+            filtered = [c for c in candidates if c[attr] == val]
+            if not filtered:  # skip empty splits
+                continue
+                
+            valid_answers += 1
+            top_candidate = filtered[0]
+            feat_vec = build_restaurant_features(top_candidate, session["context"])
+            pred = xgb_model.predict([feat_vec])[0]
+            total_rating += pred
+        
+        if valid_answers == 0:  # no valid answers
+            continue
+            
+        avg_rating = total_rating / valid_answers
+        if avg_rating > best_expected_rating:
+            best_expected_rating = avg_rating
+            best_attr = attr
+    
+    if best_attr is None:
+        return ("complete", "All options are similar!", [])
+    
+    # Add to session after selection
+    return build_question(best_attr, unique_vals)

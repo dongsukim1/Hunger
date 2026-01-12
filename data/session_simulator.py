@@ -93,6 +93,6 @@ def generate_rating(restaurant, adjusted_prefs):
             score += adjusted_prefs["ambiance_prefs"].get(attr, 0.5)
     
     # Add noise
-    final_score = score + random.gauss(0, 0.3)
+    final_score = score + random.gauss(0, 0.8)
     rating = 1 + 4 * sigmoid(final_score - 1.5)
     return min(5, max(1, round(rating)))

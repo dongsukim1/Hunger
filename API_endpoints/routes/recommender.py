@@ -1,7 +1,7 @@
 # routes/recommender.py
 from fastapi import APIRouter, HTTPException
 import uuid
-from ..recommendation_engine import load_candidate_restaurants, select_best_question, filter_candidates
+from ..recommendation_engine import load_candidate_restaurants, select_best_question, filter_candidates, select_best_question_ml
 from ..utils import is_in_mission_sf
 from ..models import RecommendationRequest, AnswerRequest 
 
@@ -25,12 +25,16 @@ def start_session(request: RecommendationRequest):
     session_id = str(uuid.uuid4())
     SESSIONS[session_id] = {
         "candidates": candidates,
-        "questions_asked": 0,
+        "questions_asked": [],
         "max_questions": request.max_questions,
-        "list_id": request.list_id
+        "list_id": request.list_id,
+        "context": "Discovery Session" 
     }
     
-    question_id, question_text, options = select_best_question(candidates)
+    # Hardcoded to use ML-based question selection for now
+    # question_id, question_text, options = select_best_question(candidates)
+    SESSIONS[session_id]["context"] = "Discovery Session"  # store context in session
+    question_id, question_text, options = select_best_question_ml(candidates, SESSIONS[session_id])
     
     return {
         "session_id": session_id,
@@ -50,18 +54,18 @@ def answer_question(request: AnswerRequest):
     questions_asked = session["questions_asked"]
     max_questions = session["max_questions"]
     
-    # Get current question to interpret answer
-    current_q_id, _, _ = select_best_question(candidates)
+    # Get current question to interpret answer currently hardcoded to use ML-based question selection
+    # question_id, _, _ = select_best_question(candidates)
+    question_id, question_text, options = select_best_question_ml(candidates, session)
     
     # Filter candidates based on answer
-    new_candidates = filter_candidates(candidates, current_q_id, answer)
-    
+    new_candidates = filter_candidates(candidates, question_id, answer)
     # Update session
     session["candidates"] = new_candidates
-    session["questions_asked"] = questions_asked + 1
+    session["questions_asked"].append(question_id)
     
     # Check termination conditions
-    if len(new_candidates) == 1 or questions_asked + 1 >= max_questions or len(new_candidates) <= 3:
+    if len(new_candidates) == 1 or len(questions_asked) + 1 >= max_questions or len(new_candidates) <= 3:
         # Return top recommendations
         results = [
             {
@@ -77,8 +81,9 @@ def answer_question(request: AnswerRequest):
         del SESSIONS[session_id]
         return {"recommendations": results}
     
-    # Ask next question
-    next_q_id, next_q_text, next_options = select_best_question(new_candidates)
+    # Ask next question defaulted to use ML-based question selection
+    # next_q_id, next_q_text, next_options = select_best_question(new_candidates)
+    next_q_id, next_q_text, next_options = select_best_question_ml(new_candidates, session)
     return {
         "session_id": session_id,
         "question": {"id": next_q_id, "text": next_q_text, "options": next_options},

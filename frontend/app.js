@@ -128,13 +128,6 @@ async function rateRestaurantByName() {
   }
 }
 
-// Shared function to fetch lists
-async function fetchLists() {
-  const res = await fetch(`${API_BASE}/lists`);
-  if (!res.ok) throw new Error("Failed to fetch lists");
-  return await res.json();
-}
-
 // Auto-purge deleted lists older than 30 days
 async function purgeOldDeletedLists() {
   try {
