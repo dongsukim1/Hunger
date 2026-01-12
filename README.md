@@ -27,18 +27,21 @@ Google Places API is intended to be used strictly as a one-time data ingestion s
 <details>
   <summary>Technical Implementation</summary>
   Technical Implementation
+  
 - Designed around minimizing API calls and ensuring that data sourcing does not become an external runtime dependency. It would make sense for a live app serving many users or a wide geographical area but it did not make sense for the proof of concept.
 - The initial ingestion is done via the Google Places API where we seed the local database with its geospatial queries (Nearby Search). They are conservative and overlapping because querying > 20 locations causes truncated lists --> we lose everything below the cutoff.
 - Relying on the free tier of the API limits me to 5000 calls/month so our geographical area is limited to a predefined latitude and longitude bounding box roughly representative of Mission, San Francisco.
 - Results are deduplicated via their unique google_place_id and written into the local database. After this step, no live Google API calls are intended. All user interactions, searches, and recommendations query the local database directly.
 - Currently, all the restaurants in the local db have synthetic tags. Justified below.
 
+
   Flow of Data
-     Ingestion: A script calls fetch_places_nearby and results are deduplicated + commmitted to the local db.
-     User Action: The user starts a recommendation session by providing their location and a max distance.
-     Filtering Logic: The backend loads operational restaurants and filters them using the haversine_distance function.
-     Interactive Loop: The system identifies the best question → User answers → Candidates are filtered → This repeats until ≤3 candidates remain.
-     Recommendation & Feedback: The user receives suggestions, visits one, and provides a rating. This creates the crucial feedback loop.
+    -   Ingestion: A script calls fetch_places_nearby and results are deduplicated + commmitted to the local db.
+    -   User Action: The user starts a recommendation session by providing their location and a max distance.
+    -   Filtering Logic: The backend loads operational restaurants and filters them using the haversine_distance function.
+    -   Interactive Loop: The system identifies the best question → User answers → Candidates are filtered → This repeats until ≤3 candidates remain.
+    -   Recommendation & Feedback: The user receives suggestions, visits one, and provides a rating. This creates the crucial feedback loop.
+
 
   Justification
 - Cost and latency were big driving factors around the design of the data sourcing. Trying to support even an entire city would've taken tens of thousands of API calls especially in a city as dense as San Francisco. Querying for any distance above 150m was unsupported.
@@ -63,12 +66,14 @@ The system supports an explicit recommendation action initiated by the user thro
 
 <details>
   <summary>Technical Implementation</summary>
+  
   The ML component is built as a probabilistic recommendation layer on top of the local database.
   - Model Core: Utilizes XGBoost to predict a user's likely rating (1.0–5.0) for a restaurant based on its features and the current context.
   - Predictive Features: The model is trained on contextual triplets: 
     - Restaurant Attributes: Price tier, cuisine (one-hot encoded), and synthetic tags (e.g., has_outdoor_seating).
     - Contextual Data: The specific user-defined list (e.g., "Mission Burritos") is encoded as a primary feature to ensure the model understands that ratings are relative to the list, not global.
   - Deployment: The trained model is serialized into a rating_model.json file, which the FastAPI backend loads at startup to perform real-time inference during discovery sessions. Retrains the model if there are new unprocessed ratings.
+
 
   The XGBoost model was trained by creating semi-realistic synthetic user personas with semi-random preferences. A session simulator was created so that these personas could generate feedback for recommendations and noise was intentionally introduced to reflect human     responses. Using a Bayesian probability approach made the most sense because it would allow for probabilistic updates and mistake tolerance when human users would inevitably make give inconsistent answers. Removing user IDs was necessary because it would cause          leakage and the model would memorize users instead of generalizing.
 </details>
