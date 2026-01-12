@@ -26,7 +26,6 @@ Google Places API is intended to be used strictly as a one-time data ingestion s
 
 <details>
   <summary>Technical Implementation</summary>
-  Technical Implementation
   
 - Designed around minimizing API calls and ensuring that data sourcing does not become an external runtime dependency. It would make sense for a live app serving many users or a wide geographical area but it did not make sense for the proof of concept.
 - The initial ingestion is done via the Google Places API where we seed the local database with its geospatial queries (Nearby Search). They are conservative and overlapping because querying > 20 locations causes truncated lists --> we lose everything below the cutoff.
