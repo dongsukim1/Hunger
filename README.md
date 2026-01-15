@@ -59,9 +59,9 @@ Google Places API is intended to be used strictly as a one-time data ingestion s
 
   Justification
 - Cost and latency were big driving factors around the design of the data sourcing. Trying to support even an entire city would've taken tens of thousands of API calls especially in a city as dense as San Francisco. Querying for any distance above 150m was unsupported.
-- The project simply didn't need all the bells and whistles provided by a premium plan. Even Google Maps ratings were not useful because external bias would pollute downstream recommendation systems. Not all restaurants have the same number of descriptor tags and         locations more heavily advertised by Google or with high traffic would receive priority.
+- The project simply didn't need all the bells and whistles provided by a premium plan. Even Google Maps ratings were not useful because external bias would pollute downstream recommendation systems. Not all restaurants have the same number of descriptor tags and locations more heavily advertised by Google or with high traffic would receive priority.
 - Explicit, user-defined preferences allow ratings to stay locally meaningful and prevent incompatible comparisons.
-- The project relied heavily on the use of synthetic data to both train the model and serve recommendations. This was necessary to solve cold-start issues with the ML-guided recommender because there isn't a userbase yet and because using Google's pre-existing tags       would pollute the data. For real use, all synthetic tags would need to be phased out.
+- The project relied heavily on the use of synthetic data to both train the model and serve recommendations. This was necessary to solve cold-start issues with the ML-guided recommender because there isn't a userbase yet and because using Google's pre-existing tags would pollute the data. For real use, all synthetic tags would need to be phased out.
 </details>
 
 ## Restaurant Data Model / Database Design
