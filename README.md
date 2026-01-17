@@ -36,7 +36,7 @@ uvicorn API_endpoints.main:app --reload --port 8000
 ## Scope and Non-Goals
 The system will support < 10 users, limited geographic scope (e.g., currently Mission, San Francisco), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
 
-This was a learning project built in under ten days. The recommendations are not useful because they have synthetic tags(food type, amenities, ambiance are not accurate!).
+This was a learning project built in under ten days. The recommendations are not yet useful because they have synthetic tags(food type, amenities, ambiance are not accurate!).
 
 ## Core Principles
 - External APIs are ingestion-only, not runtime dependencies.
