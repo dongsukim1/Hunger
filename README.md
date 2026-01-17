@@ -111,6 +111,7 @@ The design implements contextual, user-defined comparisons that scale naturally 
 
 <details>
 <summary>Future directions</summary>
+  
 ## UI & UX
 The current frontend is not ideal. I could learn how to use Flutter to build a dedicated mobile framework to host the project and move away from the webapp. 
   
@@ -122,7 +123,7 @@ The implementation of a basic interactive map and integrating simple geospatial 
 ### Data Engineering
 The current data sourcing method is a huge source of potential improvements. The query nearby radius was originally 600m but the Google Places API can only return 20 queries at a time meaning I would occasionally lose restaurants in extremely dense locations such as Mission, San Francisco. I had to bring it down as low as 100m to guarantee I did not miss locations. I am also limited by Google Cloud free use limits that only allow the API to be polled 5000 times/month as well as my lack of knowledge with the API. I am almost certain there can be a more efficient implementation and it would be required to scale this app beyond its current limitations. 
 
-The database implementation is also inherently problematic for scalability even if currently acceptable given the scope. It would eventually need to be imported to something like PostgreSQL and the underlying backend would need to move away from its current monolithic design towards something like microservices. The algorithm for calculating relative distances used in the recommender system is also unsustainable at scale. Distance filtering uses brute-force haversine, which was acceptable for my scale with N < 1,000. At scale, geospatial indexing would be necessary (e.g., H3 or PostGIS) to minimize response times and computational load.
+The database implementation is also inherently problematic for scalability even if currently acceptable given the scope. It would eventually need to be imported to something like PostgreSQL and the underlying backend would need to move away from its current monolithic design towards something like microservices. The algorithm for calculating relative distances used in the recommender system is also unsustainable at scale. Distance filtering uses brute-force haversine which works for my use case. At scale, geospatial indexing would be necessary (e.g., H3 or PostGIS) to minimize response times and computational load.
 
 ### Machine Learning Recommendations
 Substantial optimizations and improvements to the machine learning aspects. I don't have industry experience designing systems that scale to millions of users nor handling such data. The testing of the recommendation features was difficult and likely subject to my own biases. The inspiration behind the questionnaire feature was Akinator in the hopes that it would be able to "guess" locations that users might like by just asking some questions but I realized that active learning is only practical and useful at scale.
