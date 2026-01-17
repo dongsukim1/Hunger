@@ -26,7 +26,7 @@ This project aims to address the first flaw by replacing global rankings with co
 Navigate to the project directory and just run
 ```bash
 cd frontend
-run python -m http.server 8080
+python -m http.server 8080
 ```
 #### Backend
 Navigate to the main project directory, run the following, and open up http://localhost8080
