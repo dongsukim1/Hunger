@@ -2,7 +2,7 @@
 ## Pitch
 I like being able to keep track of the restaurants I've tried and my personal thoughts about them. A product capable of doing this exists in the form of an app called Beli but it has one major problem. The ratings quickly lose relevance as you rate more places because it enforces a global relative rating. If you could create your own groupings or create contexts within the app this wouldn't be an issue but that's not a thing.
 
-Hunger is my alternative take on Beli. It recenters the focus to personalized and perpetually relevant record keeping of visited food locations. It is also capable of serving recommendations to new locations via a machine learning recommender system + feedback loop.
+Hunger is my alternative take on Beli. It recenters the focus on personalized and perpetually relevant record keeping of visited food locations. It comes with a basic webapp frontend and is also capable of serving recommendations to new locations via a machine learning recommender system + feedback loop.
 
 <details>
   <summary>Longer Thoughts</summary>
