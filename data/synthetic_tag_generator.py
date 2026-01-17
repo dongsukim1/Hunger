@@ -2,7 +2,7 @@ import sqlite3
 import random
 import os
 from pathlib import Path
-from ..API_endpoints.database import get_db
+from ..API.database import get_db
 
 # Paths
 

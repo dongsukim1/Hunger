@@ -1,4 +1,4 @@
-# API_endpoints/lifespan.py
+# lifespan.py
 import subprocess
 import sys
 from pathlib import Path
