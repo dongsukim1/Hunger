@@ -6,10 +6,10 @@ Hunger is my alternative take on Beli. It recenters the focus to personalized an
 
 <details>
   <summary>Longer Thoughts</summary>
+
 The idea for this project spun out from an existing app known as Beli. Beli is an app that allows users to keep track of and rate restaurants they have visited. It relies on a single, global, relative rating system per user. In my opinion, it has at least some flaws that make it increasingly less usable. As users visit more restaurants across increasingly different contexts (fine dining vs fast food, takeout vs sit-down, work lunches vs special occasions), a single linear ranking becomes incoherent. Comparisons lose semantic meaning, and ratings become noisy and unstable over time. This reduces long-term usability and degrades recommendation quality. For example, it doesn't make sense to compare the same food from two different locations where one location is known specifically for the food and the other is the closest you can find this food. The other location might not necessarily be bad, it might even be the best location that doesn't require you to travel. Beli doesn't really differentiate this well. There does exist functionality in Beli that automatically creates these lists based on available tags but users can not create them and the ratings are not relative to other places on that list. It is also locked behind usage, i.e the user needs to accomplish a task to unlock the feature. It makes eating competitive by comparing you to other diners globally? Why?
 
 
-  
 This project aims to address the first flaw by replacing global rankings with contextual, user-defined groupings in which ratings are locally meaningful even as the number of locations scales. A minimalist app design was designed to address the second, a shift from a social media/competitive eating platform. As groupings begin to lose meaning or become unmanageably large, the user can choose to create new stratifications that make sense to them. The system is currently designed to minimize external API usage, store only necessary data, and generate high-quality feedback signals to fuel machine learning–based recommendations.
 </details>
 
