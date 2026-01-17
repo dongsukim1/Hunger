@@ -31,7 +31,7 @@ python -m http.server 8080
 #### Backend
 Navigate to the main project directory, run the following, and open up http://localhost8080
 ```bash
-uvicorn API_endpoints.main:app --reload --port 8000
+uvicorn API.main:app --reload --port 8000
 ```
 ## Scope and Non-Goals
 The system will support < 10 users, limited geographic scope (e.g., currently Mission, San Francisco), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.
