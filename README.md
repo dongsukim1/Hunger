@@ -10,6 +10,7 @@ The idea for this project spun out from an existing app known as Beli. Beli is a
 
 This project aims to address the first flaw by replacing global rankings with contextual, user-defined groupings in which ratings are locally meaningful even as the number of locations scales. A minimalist app design was designed to address the second, a shift from a social media/competitive eating platform. As groupings begin to lose meaning or become unmanageably large, the user can choose to create new stratifications that make sense to them. The system is currently designed to minimize external API usage, store only necessary data, and generate high-quality feedback signals to fuel machine learning–based recommendations.
 </details>
+
 ## Tech Stack
 - Python
 - FastAPI
