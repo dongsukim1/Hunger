@@ -98,7 +98,7 @@ The system supports an explicit recommendation action initiated by the user thro
   - Deployment: The trained model is serialized into a rating_model.json file, which the FastAPI backend loads at startup to perform real-time inference during discovery sessions. Retrains the model if there are new unprocessed ratings.
 
 
-  The XGBoost model was trained by creating semi-realistic synthetic user personas with semi-random preferences. A session simulator was created so that these personas could generate feedback for recommendations and noise was intentionally introduced to reflect human     responses. Using a Bayesian probability approach made the most sense because it would allow for probabilistic updates and mistake tolerance when human users would inevitably make give inconsistent answers. Removing user IDs was necessary because it would cause          leakage and the model would memorize users instead of generalizing.
+The XGBoost model was trained by creating semi-realistic synthetic user personas with semi-random preferences. A session simulator was created so that these personas could generate feedback for recommendations and noise was intentionally introduced to reflect human     responses. Using a Bayesian probability approach made the most sense because it would allow for probabilistic updates and mistake tolerance when human users would inevitably make give inconsistent answers. Removing user IDs was necessary because it would cause          leakage and the model would memorize users instead of generalizing.
 </details>
 
 ## Schema Evolution and Extensibility
@@ -111,17 +111,18 @@ The design implements contextual, user-defined comparisons that scale naturally 
 
 <details>
 <summary>Future directions</summary>
+## UI & UX
+The current frontend is not ideal. I could learn how to use Flutter to build a dedicated mobile framework to host the project and move away from the webapp. 
   
-The creation of a simple mobile app to host the project instead of hosting it locally. 
-
-The implementation of a very basic social features just to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations but none of this is available internally.
-
-More UX features that would naturally follow social features such as being able to hide lists, ratings, or being able to mix restaurants with no ratings into normal lists.
+The implementation of a very basic social features to allow adding people you know and being able to look at lists that they have publicly available(similar to Spotify). This project avoided designing a social media platform the way Beli seems to be developing. I think people might have mixed opinions about this but some users might not really care what other people think. Individual palates are very different. As it stands, sharing lists with other users and adding more restaurants is possible but user unfriendly. You could share personal databases with other users or modify the code directly to poll the Google Places API using your own API key and obtain more locations but none of this is available internally. More UX features would naturally follow social features such as being able to hide lists, ratings, or being able to mix restaurants with no ratings into normal lists.
 
 The implementation of a basic interactive map and integrating simple geospatial analysis into the machine learning components. I imagine that this would be very involved, require rehauling of data collection, and be expensive to maintain.
 
+## Scalability & Optimization
+### Data Engineering
 The current data sourcing method is a huge source of potential improvements. The query nearby radius was originally 600m but the Google Places API can only return 20 queries at a time meaning I would occasionally lose restaurants in extremely dense locations such as Mission, San Francisco. I had to bring it down as low as 100m to guarantee I did not miss locations. I am also limited by Google Cloud free use limits that only allow the API to be polled 5000 times/month as well as my lack of knowledge with the API. I am almost certain there can be a more efficient implementation and it would be required to scale this app beyond its current limitations. 
 
-The database implementation is also inherently problematic for scalability even if currently acceptable given the scope. It would eventually need to be imported to something like PostgreSQL and the underlying backend would need to move away from its current monolithic design towards something like microservices. The algorithm for calculating relative distances used in the recommender system is also unsustainable at scale. Distance filtering uses brute-force haversine, acceptable for N < 1,000. At scale, this would be replaced by geospatial indexing (e.g., H3 or PostGIS).
+The database implementation is also inherently problematic for scalability even if currently acceptable given the scope. It would eventually need to be imported to something like PostgreSQL and the underlying backend would need to move away from its current monolithic design towards something like microservices. The algorithm for calculating relative distances used in the recommender system is also unsustainable at scale. Distance filtering uses brute-force haversine, which was acceptable for my scale with N < 1,000. At scale, geospatial indexing would be necessary (e.g., H3 or PostGIS) to minimize response times and computational load.
 
+### Machine Learning Recommendations
 Substantial optimizations and improvements to the machine learning aspects. I don't have industry experience designing systems that scale to millions of users nor handling such data. The testing of the recommendation features was difficult and likely subject to my own biases. The inspiration behind the questionnaire feature was Akinator in the hopes that it would be able to "guess" locations that users might like by just asking some questions but I realized that active learning is only practical and useful at scale.
