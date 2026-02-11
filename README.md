@@ -74,12 +74,12 @@ Google Places API is intended to be used strictly as a one-time data ingestion s
 </details>
 
 ## Restaurant Data Model / Database Design
-Restaurants are treated as factual, location-based entities with no inherent ranking or preference information. Only attributes required for identification, mapping, and basic filtering are stored in the base `restaurants` table. These include an internal id, google_place_id, name, latitude, longitude, address, price_level, and business_status. Feature attributes used by recommendation/training are stored separately in `restaurant_features` (with `synthetic_attributes` retained as a migration bridge). Google-provided ratings and rating counts are intentionally excluded because they do not align with the project’s contextual rating model and add no value to downstream logic. A theoretical user could find this information elsewhere if necessary; the app should not need to provide it.
+Restaurants are treated as factual, location-based entities with no inherent ranking or preference information. Only attributes required for identification, mapping, and basic filtering are stored in the base `restaurants` table. These include an internal id, google_place_id, name, latitude, longitude, address, price_level, and business_status. Feature attributes used by recommendation/training are stored separately in `restaurant_features` (with `synthetic_attributes` retained as a migration bridge). Google-provided ratings and rating counts are intentionally excluded because they do not align with the project's contextual rating model and add no value to downstream logic. A theoretical user could find this information elsewhere if necessary; the app should not need to provide it.
 
 ## User Context and Organization Model
 The primary abstraction in the system is the user-defined list. Lists function similarly to playlists in Spotify. A list represents a context in which restaurants are meaningfully comparable. Examples include cuisine-based groupings, price-based groupings, geographic groupings, or occasion-based groupings. Users may create any number of lists, name them freely, and add or remove restaurants at will. Restaurants may belong to multiple lists simultaneously. The system does not impose a predefined taxonomy or hierarchy.
 
-For MVP purposes, lists may also be created implicitly by the system in response to a user’s answers to a guided questionnaire (e.g., “Chinese or Japanese, within 3km, under $30”), and named automatically for traceability.
+For MVP purposes, lists may also be created implicitly by the system in response to a user's answers to a guided questionnaire (e.g., "Chinese or Japanese, within 3km, under $30"), and named automatically for traceability.
 
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1-5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
@@ -104,7 +104,7 @@ The XGBoost model was trained by creating semi-realistic synthetic user personas
 ## Schema Evolution and Extensibility
 The schema is designed to evolve without requiring additional Google API calls. Optional raw Google Places responses may be stored to allow future feature extraction. User-defined lists naturally support further subdivision without schema changes. Additional metadata or embeddings can be added later without invalidating existing data.
 
-The core tables—`restaurants`, `lists`, `list_restaurants`, `ratings`, `processed_ratings`, `synthetic_attributes`, and `restaurant_features`—are normalized to support correct relational semantics while keeping the schema extensible for later feature additions.
+The core tables -`restaurants`, `lists`, `list_restaurants`, `ratings`, `processed_ratings`, `synthetic_attributes`, and `restaurant_features` - are normalized to support correct relational semantics while keeping the schema extensible for later feature additions.
 
 ## Migration Utilities
 - Backfill canonical features:
