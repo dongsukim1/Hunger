@@ -104,7 +104,7 @@ The XGBoost model was trained by creating semi-realistic synthetic user personas
 ## Schema Evolution and Extensibility
 The schema is designed to evolve without requiring additional Google API calls. Optional raw Google Places responses may be stored to allow future feature extraction. User-defined lists naturally support further subdivision without schema changes. Additional metadata or embeddings can be added later without invalidating existing data.
 
-The core tables`restaurants`, `lists`, `list_restaurants`, `ratings`, `processed_ratings`, `synthetic_attributes`, and `restaurant_features`are normalized to support correct relational semantics while keeping the schema extensible for later feature additions.
+The core tables-`restaurants`, `lists`, `list_restaurants`, `ratings`, `processed_ratings`, `synthetic_attributes`, and `restaurant_features`-are normalized to support correct relational semantics while keeping the schema extensible for later feature additions.
 
 ## Migration Utilities
 - Backfill canonical features:
