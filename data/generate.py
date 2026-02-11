@@ -7,6 +7,18 @@ from .data_loader import load_restaurants_from_db
 import pandas as pd
 from data.ML_recs.train_model import engineer_features
 
+def _keep_recommendation(pattern_counts, context, restaurant_id, duplicate_penalty):
+    """
+    Softly downweight repeated (context, restaurant) pairs to improve feature diversity.
+    """
+    key = (context, restaurant_id)
+    seen = pattern_counts.get(key, 0)
+    keep_prob = 1.0 / (1.0 + max(0.0, duplicate_penalty) * seen)
+    keep = random.random() < keep_prob
+    if keep:
+        pattern_counts[key] = seen + 1
+    return keep
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--seed", type=int, default=42)
@@ -16,6 +28,10 @@ def main():
     parser.add_argument("--max-questions", type=int, default=5)
     parser.add_argument("--rating-probability", type=float, default=0.55)
     parser.add_argument("--surprise-rate", type=float, default=0.08)
+    parser.add_argument("--preference-drift", type=float, default=0.20)
+    parser.add_argument("--exploration-rate", type=float, default=0.22)
+    parser.add_argument("--strictness-jitter", type=float, default=0.10)
+    parser.add_argument("--duplicate-penalty", type=float, default=0.70)
     parser.add_argument("--output", type=str, default="synthetic_ratings1.csv")
     args = parser.parse_args()
 
@@ -35,6 +51,7 @@ def main():
     # Main simulation loop
     dataset = []
     context_counts = {}
+    pattern_counts = {}
 
     for user in users:
         for _ in range(args.sessions_per_user):
@@ -49,10 +66,20 @@ def main():
                     top_k=args.top_k,
                     rating_probability=args.rating_probability,
                     surprise_rate=args.surprise_rate,
+                    preference_drift=args.preference_drift,
+                    exploration_rate=args.exploration_rate,
+                    strictness_jitter=args.strictness_jitter,
                 )
                 if not recommendations:
                     continue
                 for restaurant_id, rating in recommendations:
+                    if not _keep_recommendation(
+                        pattern_counts,
+                        context,
+                        restaurant_id,
+                        duplicate_penalty=args.duplicate_penalty,
+                    ):
+                        continue
                     dataset.append({
                         "user_id": user["user_id"],
                         "context": context,
@@ -90,6 +117,8 @@ def print_diagnostics(df, restaurants, context_counts):
 
     X = engineer_features(df, restaurants).fillna(0)
     dup_frac = float(X.duplicated().mean())
+    pair_dup_frac = float(df.duplicated(subset=["context", "restaurant_id"]).mean())
+    print(f"Duplicate (context, restaurant) fraction: {pair_dup_frac:.4f}")
     print(f"Duplicate feature-row fraction: {dup_frac:.4f}")
 
 if __name__ == "__main__":

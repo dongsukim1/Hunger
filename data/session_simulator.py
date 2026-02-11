@@ -62,6 +62,42 @@ def _restaurant_quality(restaurant):
 def _context_weights(context_name):
     return CONTEXT_WEIGHTS.get(context_name, CONTEXT_WEIGHTS["Quick Lunch"])
 
+def _clamp(value, low, high):
+    return max(low, min(high, value))
+
+def _apply_session_drift(adjusted_prefs, drift_strength):
+    """
+    Session-level drift reduces repeated near-identical sessions for the same user.
+    """
+    strength = max(0.0, float(drift_strength))
+    if strength <= 0:
+        return adjusted_prefs
+
+    drifted = {
+        "price_bias": float(adjusted_prefs["price_bias"]),
+        "cuisine_affinities": adjusted_prefs["cuisine_affinities"].copy(),
+        "ambiance_prefs": adjusted_prefs["ambiance_prefs"].copy(),
+    }
+
+    drifted["price_bias"] = _clamp(
+        drifted["price_bias"] + random.gauss(0.0, 0.28 * strength),
+        1.0,
+        3.0,
+    )
+    for cuisine, affinity in drifted["cuisine_affinities"].items():
+        drifted["cuisine_affinities"][cuisine] = _clamp(
+            affinity + random.gauss(0.0, 0.11 * strength),
+            0.05,
+            1.0,
+        )
+    for attr, pref in drifted["ambiance_prefs"].items():
+        drifted["ambiance_prefs"][attr] = _clamp(
+            pref + random.gauss(0.0, 0.15 * strength),
+            0.0,
+            1.0,
+        )
+    return drifted
+
 def compute_match_score(restaurant, adjusted_prefs, context_name):
     weights = _context_weights(context_name)
 
@@ -121,7 +157,7 @@ def _weighted_sample_without_replacement(items, k):
         chosen.append(chosen_item)
     return chosen
 
-def _expose_candidates(candidates, adjusted_prefs, context_name, top_k):
+def _expose_candidates(candidates, adjusted_prefs, context_name, top_k, explore_rate=0.22):
     scored = []
     for candidate in candidates:
         match = compute_match_score(candidate, adjusted_prefs, context_name)
@@ -131,8 +167,20 @@ def _expose_candidates(candidates, adjusted_prefs, context_name, top_k):
         scored.append((candidate, score))
 
     scored.sort(key=lambda x: x[1], reverse=True)
-    shortlist = scored[: min(18, len(scored))]
-    return _weighted_sample_without_replacement(shortlist, top_k)
+    shortlist_size = max(top_k + 2, min(20, len(scored)))
+    shortlist = scored[:shortlist_size]
+    selected = _weighted_sample_without_replacement(shortlist, top_k)
+
+    # Controlled exploration improves restaurant/context coverage in training data.
+    if len(scored) > shortlist_size and random.random() < max(0.0, min(1.0, explore_rate)):
+        tail = scored[shortlist_size:min(len(scored), shortlist_size + 24)]
+        tail_pick = _weighted_sample_without_replacement(tail, 1)
+        if tail_pick:
+            if selected:
+                selected[-1] = tail_pick[0]
+            else:
+                selected = tail_pick
+    return selected
 
 def _utility_to_rating(utility):
     # Ordinal cut points keep rating distribution controllable and non-linear.
@@ -175,8 +223,12 @@ def simulate_session(
     top_k=3,
     rating_probability=0.55,
     surprise_rate=0.08,
+    preference_drift=0.20,
+    exploration_rate=0.22,
+    strictness_jitter=0.10,
 ):
     adjusted_prefs = apply_context_modifiers(user_prefs, context_name)
+    adjusted_prefs = _apply_session_drift(adjusted_prefs, preference_drift)
     candidates = [r for r in restaurants if r.get("cuisine") in adjusted_prefs["cuisine_affinities"]]
 
     strictness = float(user_prefs.get("strictness", 0.6))
@@ -195,11 +247,18 @@ def simulate_session(
         context_mod = user_prefs["context_modifiers"].get(context_name, {})
         answer = sample_answer(attr, user_prefs, context_mod)
 
-        filtered = _soft_filter_candidates(candidates, attr, answer, strictness)
+        local_strictness = _clamp(strictness + random.gauss(0.0, strictness_jitter), 0.30, 0.95)
+        filtered = _soft_filter_candidates(candidates, attr, answer, local_strictness)
         if filtered:
             candidates = filtered
 
-    exposed = _expose_candidates(candidates, adjusted_prefs, context_name, top_k)
+    exposed = _expose_candidates(
+        candidates,
+        adjusted_prefs,
+        context_name,
+        top_k,
+        explore_rate=exploration_rate,
+    )
 
     recommendations = []
     for restaurant in exposed:
