@@ -1,6 +1,7 @@
 # retrain.py
 import os
 import sys
+import json
 import pandas as pd
 import xgboost as xgb
 
@@ -13,7 +14,32 @@ from backend.database import get_db
 from train_model import engineer_features
 
 MODEL_PATH = os.path.join(PROJECT_ROOT, "rating_model.json")
+FEATURE_SCHEMA_PATH = os.path.join(PROJECT_ROOT, "rating_model_features.json")
 MIN_NEW_SESSIONS = 1
+MODEL_CONTEXTS = [
+    "Date Night",
+    "Group Hang",
+    "Quick Lunch",
+    "Weekend Brunch",
+    "Late Night Eats",
+]
+
+def normalize_context_for_model(raw_context: str) -> str:
+    if raw_context in MODEL_CONTEXTS:
+        return raw_context
+
+    value = (raw_context or "").strip().lower()
+    if any(token in value for token in ["date", "anniversary", "romantic"]):
+        return "Date Night"
+    if any(token in value for token in ["group", "friends", "party", "hang"]):
+        return "Group Hang"
+    if any(token in value for token in ["brunch", "weekend", "breakfast"]):
+        return "Weekend Brunch"
+    if any(token in value for token in ["late", "night", "bar", "after"]):
+        return "Late Night Eats"
+    if any(token in value for token in ["lunch", "work", "quick"]):
+        return "Quick Lunch"
+    return "Quick Lunch"
 
 def retrain_model():
     conn = get_db()
@@ -43,12 +69,14 @@ def retrain_model():
     
     # Combine with synthetic data
     synthetic_df = pd.read_csv("data/synthetic_ratings1.csv")
+    new_df["context"] = new_df["context"].map(normalize_context_for_model)
     full_df = pd.concat([synthetic_df, new_df[["user_id", "restaurant_id", "rating", "context"]]], ignore_index=True)
     
     # 3. Train model
     restaurants = load_restaurants_from_db()
     X = engineer_features(full_df, restaurants)
     y = full_df["rating"]
+    feature_names = X.columns.tolist()
     
     model = xgb.XGBRegressor(
         n_estimators=100,
@@ -58,6 +86,8 @@ def retrain_model():
     )
     model.fit(X, y)
     model.save_model(MODEL_PATH)
+    with open(FEATURE_SCHEMA_PATH, "w", encoding="utf-8") as f:
+        json.dump(feature_names, f)
     
     # Mark new ratings as processed
     for row in new_ratings:

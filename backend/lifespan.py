@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from datetime import datetime, timedelta, timezone
 from .database import get_db
+from .recommendation_engine import reload_model_artifacts
 
 @asynccontextmanager
 async def lifespan(app=FastAPI):
@@ -27,6 +28,7 @@ async def lifespan(app=FastAPI):
             timeout=60
         )
         if result.returncode == 0:
+            reload_model_artifacts()
             print("Model retraining completed")
         else:
             print(f"Retraining failed: {result.stderr}")

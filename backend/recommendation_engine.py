@@ -2,34 +2,69 @@
 from typing import List, Dict, Any
 from .utils import haversine_distance
 from typing import Set
-from .database import get_db
 import os
+import json
+import threading
 import xgboost as xgb
+from data.data_loader import load_restaurants_from_db
 
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "rating_model.json")
+FEATURE_SCHEMA_PATH = os.path.join(os.path.dirname(__file__), "..", "rating_model_features.json")
 xgb_model = xgb.XGBRegressor()
-xgb_model.load_model(MODEL_PATH)
+FEATURE_SCHEMA = []
+MODEL_LOCK = threading.Lock()
+
+def reload_model_artifacts():
+    """
+    Reload model + feature schema from disk so inference can pick up retrains
+    without a process restart.
+    """
+    global FEATURE_SCHEMA
+    with MODEL_LOCK:
+        xgb_model.load_model(MODEL_PATH)
+        with open(FEATURE_SCHEMA_PATH, "r", encoding="utf-8") as f:
+            FEATURE_SCHEMA = json.load(f)
+
+reload_model_artifacts()
+
+MODEL_CONTEXTS = [
+    "Date Night",
+    "Group Hang",
+    "Quick Lunch",
+    "Weekend Brunch",
+    "Late Night Eats",
+]
+
+def normalize_context_for_model(raw_context: str) -> str:
+    """
+    Map free-form session/list contexts to the model's known context labels.
+    """
+    if raw_context in MODEL_CONTEXTS:
+        return raw_context
+
+    value = (raw_context or "").strip().lower()
+    if any(token in value for token in ["date", "anniversary", "romantic"]):
+        return "Date Night"
+    if any(token in value for token in ["group", "friends", "party", "hang"]):
+        return "Group Hang"
+    if any(token in value for token in ["brunch", "weekend", "breakfast"]):
+        return "Weekend Brunch"
+    if any(token in value for token in ["late", "night", "bar", "after"]):
+        return "Late Night Eats"
+    if any(token in value for token in ["lunch", "work", "quick"]):
+        return "Quick Lunch"
+
+    # Safe fallback when context is unknown (e.g., "Discovery Session").
+    return "Quick Lunch"
 
 def load_candidate_restaurants(user_lat: float, user_lng: float, max_meters: float) -> List[Dict]:
     """Load operational restaurants within distance (meters) of user."""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT r.id, r.name, r.latitude, r.longitude,
-            s.cuisine, s.price_tier, s.has_outdoor_seating,
-            s.is_vegan_friendly, s.good_for_dates,
-            s.good_for_groups, s.quiet_ambiance, s.has_cocktails
-        FROM restaurants r
-        JOIN synthetic_attributes s ON r.id = s.place_id
-        WHERE r.business_status = 'OPERATIONAL'
-    """)
-    
+    rows = load_restaurants_from_db(include_location=True)
     candidates = []
-    for row in cursor.fetchall():
+    for row in rows:
         dist = haversine_distance(user_lat, user_lng, row["latitude"], row["longitude"])
         if dist <= max_meters:
             candidates.append({**dict(row), "distance_m": dist})
-    conn.close()
     return candidates
     
 def build_question(attr: str, values: Set[Any]) -> tuple:
@@ -104,37 +139,24 @@ def filter_candidates(candidates: List[Dict], question_id: str, answer: str) -> 
 
 def build_restaurant_features(restaurant: dict, context: str) -> list:
     """
-    Build feature vector matching training format.
-    Order must match XGBoost's expected features.
+    Build feature vector using the saved training schema.
+    This avoids manual column-order drift between training and inference.
     """
-    features = []
-    
-    # Price tier (int)
-    features.append(float(restaurant["price_tier"]))
-    
-    # Cuisine one-hot encoding
-    cuisines = [
-        "mexican", "italian", "american", "chinese", "japanese",
-        "thai", "indian", "french", "mediterranean", "korean",
-        "vietnamese", "spanish", "greek", "peruvian", "ethiopian"
-    ]
-    for c in cuisines:
-        features.append(1.0 if restaurant["cuisine"] == c else 0.0)
-    
-    # Boolean attributes
-    bool_attrs = [
-        "has_outdoor_seating", "good_for_dates", "is_vegan_friendly",
-        "good_for_groups", "quiet_ambiance", "has_cocktails"
-    ]
-    for attr in bool_attrs:
-        features.append(1.0 if restaurant.get(attr, False) else 0.0)
-    
-    # Context one-hot
-    contexts = ["Date Night", "Group Hang", "Quick Lunch", "Weekend Brunch", "Late Night Eats"]
-    for ctx in contexts:
-        features.append(1.0 if context == ctx else 0.0)
-    
-    return features
+    feature_values = {name: 0.0 for name in FEATURE_SCHEMA}
+    normalized_context = normalize_context_for_model(context)
+
+    if "price_tier" in feature_values:
+        feature_values["price_tier"] = float(restaurant.get("price_tier", 0) or 0)
+
+    for name in FEATURE_SCHEMA:
+        if name.startswith("cuisine_"):
+            feature_values[name] = 1.0 if restaurant.get("cuisine") == name.replace("cuisine_", "", 1) else 0.0
+        elif name.startswith("context_"):
+            feature_values[name] = 1.0 if normalized_context == name.replace("context_", "", 1) else 0.0
+        elif name in restaurant:
+            feature_values[name] = 1.0 if bool(restaurant.get(name)) else 0.0
+
+    return [feature_values[name] for name in FEATURE_SCHEMA]
 
 def select_best_question_ml(candidates: List[Dict], session) -> tuple:
     """
@@ -150,6 +172,7 @@ def select_best_question_ml(candidates: List[Dict], session) -> tuple:
     asked_attrs = set(session["questions_asked"]) 
     
     best_attr = None
+    best_values = set()
     best_expected_rating = -1
     
     for attr in question_order:
@@ -172,7 +195,8 @@ def select_best_question_ml(candidates: List[Dict], session) -> tuple:
             valid_answers += 1
             top_candidate = filtered[0]
             feat_vec = build_restaurant_features(top_candidate, session["context"])
-            pred = xgb_model.predict([feat_vec])[0]
+            with MODEL_LOCK:
+                pred = xgb_model.predict([feat_vec])[0]
             total_rating += pred
         
         if valid_answers == 0:  # no valid answers
@@ -182,9 +206,10 @@ def select_best_question_ml(candidates: List[Dict], session) -> tuple:
         if avg_rating > best_expected_rating:
             best_expected_rating = avg_rating
             best_attr = attr
+            best_values = unique_vals
     
     if best_attr is None:
         return ("complete", "All options are similar!", [])
     
     # Add to session after selection
-    return build_question(best_attr, unique_vals)
+    return build_question(best_attr, best_values)

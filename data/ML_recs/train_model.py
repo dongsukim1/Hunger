@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
+import json
+from sklearn.model_selection import GroupShuffleSplit
 from sklearn.metrics import mean_absolute_error, roc_auc_score
 import xgboost as xgb
 from data.data_loader import load_restaurants_from_db
@@ -9,6 +10,7 @@ from data.data_loader import load_restaurants_from_db
 DATA_PATH = "data/synthetic_ratings1.csv"
 DB_PATH = "data/restaurants.db"
 MODEL_PATH = "./rating_model.json"
+FEATURE_SCHEMA_PATH = "./rating_model_features.json"
 
 def engineer_features(df, restaurant_list):
     """
@@ -54,11 +56,14 @@ def main():
     
     # Handle missing values 
     X = X.fillna(0)
-    
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=(y >= 4).astype(int)
-    )
+
+    # Group-wise split by feature signature to reduce leakage from duplicate rows.
+    # This ensures identical feature vectors do not appear in both train and test.
+    groups = pd.util.hash_pandas_object(X, index=False).astype(str)
+    splitter = GroupShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
+    train_idx, test_idx = next(splitter.split(X, y, groups=groups))
+    X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
+    y_train, y_test = y.iloc[train_idx], y.iloc[test_idx]
     
     print("Training XGBoost model...")
     model = xgb.XGBRegressor(
@@ -73,15 +78,26 @@ def main():
     # Evaluate
     y_pred = model.predict(X_test)
     mae = mean_absolute_error(y_test, y_pred)
-    auc = roc_auc_score((y_test >= 4).astype(int), y_pred)
+    y_test_bin = (y_test >= 4).astype(int)
+    if y_test_bin.nunique() > 1:
+        auc = roc_auc_score(y_test_bin, y_pred)
+        auc_msg = f"{auc:.3f}"
+    else:
+        auc = float("nan")
+        auc_msg = "N/A (single class in test split)"
     
     print(f"\n Results:")
     print(f"MAE: {mae:.3f} (lower = better)")
-    print(f"AUC (≥4): {auc:.3f} (higher = better)")
+    print(f"AUC (≥4): {auc_msg} (higher = better)")
     
     # Save model
     model.save_model(MODEL_PATH)
     print(f"\n Model saved to {MODEL_PATH}")
+
+    # Save feature schema so inference uses the exact same column order.
+    with open(FEATURE_SCHEMA_PATH, "w", encoding="utf-8") as f:
+        json.dump(feature_names, f)
+    print(f"Feature schema saved to {FEATURE_SCHEMA_PATH}")
     
     # Feature importance
     importance = pd.DataFrame({

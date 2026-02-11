@@ -17,6 +17,17 @@ BOOLEAN_ATTRS = [
     "has_cocktails"
 ]
 
+CONTEXTS = ["Weekend Brunch", "Date Night", "Quick Lunch", "Group Hang", "Late Night Eats"]
+
+def _sample_context_preferences():
+    """
+    Sample a per-user context distribution via gamma draws.
+    Returns {context: probability}.
+    """
+    raw = [random.gammavariate(2.0, 1.0) for _ in CONTEXTS]
+    total = sum(raw) or 1.0
+    return {ctx: weight / total for ctx, weight in zip(CONTEXTS, raw)}
+
 def create_persona(user_id: int):
     """
     Generate a synthetic user persona with base preferences and context modifiers.
@@ -80,7 +91,10 @@ def create_persona(user_id: int):
     return {
         "user_id": f"user_{user_id:03d}",
         "base_prefs": base_prefs,
-        "context_modifiers": context_modifiers
+        "context_modifiers": context_modifiers,
+        "strictness": round(random.uniform(0.35, 0.9), 3),
+        "generosity_bias": round(random.gauss(0.0, 0.22), 3),
+        "context_preferences": _sample_context_preferences(),
     }
 
 def apply_context_modifiers(user_prefs, context_name):
@@ -115,3 +129,16 @@ def get_context_modifier(context_name, user_prefs):
     Helper: Get context modifier dict for a given context.
     """
     return user_prefs["context_modifiers"].get(context_name, {})
+
+def sample_user_context(user_prefs):
+    """
+    Sample one context using user-specific context preferences.
+    Falls back to uniform if unavailable.
+    """
+    context_preferences = user_prefs.get("context_preferences", {})
+    if not context_preferences:
+        return random.choice(CONTEXTS)
+
+    contexts = list(context_preferences.keys())
+    probs = list(context_preferences.values())
+    return random.choices(contexts, weights=probs, k=1)[0]
