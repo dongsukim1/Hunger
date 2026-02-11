@@ -79,7 +79,7 @@ Restaurants are treated as factual, location-based entities with no inherent ran
 ## User Context and Organization Model
 The primary abstraction in the system is the user-defined list. Lists function similarly to playlists in Spotify. A list represents a context in which restaurants are meaningfully comparable. Examples include cuisine-based groupings, price-based groupings, geographic groupings, or occasion-based groupings. Users may create any number of lists, name them freely, and add or remove restaurants at will. Restaurants may belong to multiple lists simultaneously. The system does not impose a predefined taxonomy or hierarchy.
 
-For MVP purposes, lists may also be created implicitly by the system in response to a users answers to a guided questionnaire (e.g., "Chinese or Japanese, within 3km, under $30"), and named automatically for traceability.
+For MVP purposes, lists may also be created implicitly by the system in response to a user's answers to a guided questionnaire (e.g., "Chinese or Japanese, within 3km, under $30"), and named automatically for traceability.
 
 ## Ratings Model
 Ratings are defined as a relationship between a user, a restaurant, and a list. There is no concept of a global restaurant rating. A restaurant may have multiple ratings by the same user, as long as they occur in different lists. This ensures ratings are always contextual and semantically coherent. Ratings use a fixed 1-5 integer scale and are meaningful only within the list in which they are given. The user interface (even if minimal) should present restaurants within the same context during rating to encourage relative judgment.
