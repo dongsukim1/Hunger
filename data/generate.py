@@ -11,7 +11,7 @@ def main():
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--num-users", type=int, default=20)
     parser.add_argument("--sessions-per-user", type=int, default=25)
-    parser.add_argument("--output", type=str, default="synthetic_ratings.csv")
+    parser.add_argument("--output", type=str, default="synthetic_ratings1.csv")
     args = parser.parse_args()
 
     # Seed everything

@@ -1,6 +1,6 @@
 # Hunger
 ## Pitch
-I like being able to keep track of the restaurants I've tried and my personal thoughts about them. A product capable of doing this exists in the form of an app called Beli but it has one major problem. The ratings quickly lose relevance as you rate more places because it enforces a global relative rating. If you could create your own groupings or create contexts within the app this wouldn't be an issue but that's not a thing.
+I like being able to keep track of the restaurants I've tried and my personal thoughts about them. A product capable of doing this exists in the form of an app called Beli but it has one major problem. The ratings quickly lose relevance as you rate more places because it enforces a global relative rating. If you could create your own groupings or create contexts within the app this wouldn't be an issue but that's a paid/unlockable feature.
 
 Hunger is my alternative take on Beli. It recenters the focus on personalized and perpetually relevant record keeping of visited food locations. It comes with a basic webapp frontend and is also capable of serving recommendations to new locations via a machine learning recommender system + feedback loop.
 
@@ -31,7 +31,7 @@ python -m http.server 8080
 #### Backend
 Navigate to the main project directory, run the following, and open up http://localhost8080
 ```bash
-uvicorn API.main:app --reload --port 8000
+uvicorn backend.main:app --reload --port 8000
 ```
 ## Scope and Non-Goals
 The system will support < 10 users, limited geographic scope (e.g., currently Mission, San Francisco), and one-time ingestion of third-party data. Social features, real-time synchronization, a decent looking frontend, multi-user support, and UX features beyond the bare minimum are explicitly out of scope. The focus is on correctness, clarity, modularity, and extensibility rather than scale or polish.

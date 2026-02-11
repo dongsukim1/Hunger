@@ -9,7 +9,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..
 sys.path.insert(0, PROJECT_ROOT)
 
 from data.data_loader import load_restaurants_from_db
-from API.database import get_db
+from backend.database import get_db
 from train_model import engineer_features
 
 MODEL_PATH = os.path.join(PROJECT_ROOT, "rating_model.json")

@@ -1,4 +1,4 @@
-from API.database import get_db
+from backend.database import get_db
 
 def load_restaurants_from_db():
     """Reload restaurants with synthetic attributes from the database."""
