@@ -1,0 +1,11 @@
+﻿{
+  "regions": [
+    {
+      "name": "mission_sf + surrounding neighborhoods",
+      "bbox": [37.74316, -122.43556, 37.769249996806195, -122.40801467343661],
+      "initial_radius_m": 100,
+      "min_radius_m": 35,
+      "overlap_step_ratio": 0.7
+    }
+  ]
+}
