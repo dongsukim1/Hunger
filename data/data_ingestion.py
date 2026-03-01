@@ -3,6 +3,7 @@ import sqlite3
 import math
 import time
 import logging
+from datetime import datetime
 from typing import List, Tuple, Dict, Any
 import os
 
@@ -42,6 +43,50 @@ def create_db():
         )
     """)
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_place_id ON restaurants(google_place_id);")
+    cursor.execute(
+        """
+        CREATE TABLE IF NOT EXISTS api_usage (
+            usage_month TEXT PRIMARY KEY,
+            request_count INTEGER NOT NULL DEFAULT 0
+        )
+        """
+    )
+    conn.commit()
+    conn.close()
+
+
+def current_usage_month() -> str:
+    return datetime.utcnow().strftime("%Y-%m")
+
+
+def get_monthly_request_count() -> int:
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT request_count FROM api_usage WHERE usage_month = ?",
+        (current_usage_month(),),
+    )
+    row = cursor.fetchone()
+    conn.close()
+    return row[0] if row else 0
+
+
+def increment_request_counters(count: int = 1):
+    global REQUEST_COUNTER
+    REQUEST_COUNTER += count
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    month = current_usage_month()
+    cursor.execute(
+        """
+        INSERT INTO api_usage (usage_month, request_count)
+        VALUES (?, ?)
+        ON CONFLICT(usage_month) DO UPDATE SET
+            request_count = request_count + excluded.request_count
+        """,
+        (month, count),
+    )
     conn.commit()
     conn.close()
 
@@ -59,7 +104,6 @@ def generate_grid_points(sw_lat, sw_lng, ne_lat, ne_lng, step_m):
 
 
 def fetch_places_nearby(lat: float, lng: float, radius: int) -> List[Dict[str, Any]]:
-    global REQUEST_COUNTER
     all_results = []
     url = "https://places.googleapis.com/v1/places:searchNearby"
     headers = {
@@ -93,7 +137,7 @@ def fetch_places_nearby(lat: float, lng: float, radius: int) -> List[Dict[str, A
             time.sleep(2)  # Required by Google before using nextPageToken
 
         try:
-            REQUEST_COUNTER += 1
+            increment_request_counters()
             logger.info(f"Making API request #{REQUEST_COUNTER}")
             response = requests.post(url, json=payload, headers=headers, timeout=10)
             response.raise_for_status()
@@ -121,14 +165,13 @@ def fetch_places_nearby(lat: float, lng: float, radius: int) -> List[Dict[str, A
 
 def fetch_place_price_level(place_id: str) -> Any:
     """Fetch only priceLevel for a single place after dedupe is complete."""
-    global REQUEST_COUNTER
     url = f"https://places.googleapis.com/v1/places/{place_id}"
     headers = {
         "X-Goog-Api-Key": GOOGLE_API_KEY,
         "X-Goog-FieldMask": "priceLevel"
     }
 
-    REQUEST_COUNTER += 1
+    increment_request_counters()
     response = requests.get(url, headers=headers, timeout=10)
     response.raise_for_status()
     data = response.json()
@@ -148,7 +191,8 @@ def enrich_unique_places_with_price_level(unique_places: List[Dict[str, Any]]):
     # tight (1,000 API calls/month in this project). Price level must only be fetched when
     # someone explicitly approves the additional call volume for this run.
     user_approved = os.getenv(PRICE_LEVEL_APPROVAL_ENV, "").lower() in {"1", "true", "yes"}
-    projected_total_calls = REQUEST_COUNTER + projected_detail_calls
+    month_to_date_calls = get_monthly_request_count()
+    projected_total_calls = month_to_date_calls + projected_detail_calls
 
     if not user_approved:
         logger.warning(
@@ -159,10 +203,13 @@ def enrich_unique_places_with_price_level(unique_places: List[Dict[str, Any]]):
         return
 
     if projected_total_calls > MONTHLY_API_CALL_BUDGET:
-        raise RuntimeError(
-            f"Refusing to fetch priceLevel because projected total requests ({projected_total_calls}) "
-            f"exceed monthly budget ({MONTHLY_API_CALL_BUDGET}). Reduce area size or rerun with fewer places."
+        logger.warning(
+            "Skipping priceLevel enrichment: projected monthly requests (%s) exceed budget (%s). "
+            "Nearby-search results will still be inserted.",
+            projected_total_calls,
+            MONTHLY_API_CALL_BUDGET,
         )
+        return
 
     for i, place in enumerate(unique_places, start=1):
         place_id = place["id"]
