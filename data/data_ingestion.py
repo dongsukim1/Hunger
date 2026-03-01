@@ -159,10 +159,13 @@ def enrich_unique_places_with_price_level(unique_places: List[Dict[str, Any]]):
         return
 
     if projected_total_calls > MONTHLY_API_CALL_BUDGET:
-        raise RuntimeError(
-            f"Refusing to fetch priceLevel because projected total requests ({projected_total_calls}) "
-            f"exceed monthly budget ({MONTHLY_API_CALL_BUDGET}). Reduce area size or rerun with fewer places."
+        logger.warning(
+            "Skipping priceLevel enrichment because projected total requests (%s) exceed monthly budget (%s). "
+            "Continuing ingestion without priceLevel details.",
+            projected_total_calls,
+            MONTHLY_API_CALL_BUDGET,
         )
+        return
 
     for i, place in enumerate(unique_places, start=1):
         place_id = place["id"]
