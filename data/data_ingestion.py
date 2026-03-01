@@ -14,6 +14,8 @@ logger = logging.getLogger(__name__)
 GOOGLE_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY") # GOOGLE_PLACES_API_KEY=your_key_here data_ingestion.py
 DB_PATH = "data/restaurants.db"
 REQUEST_COUNTER = 0
+MONTHLY_API_CALL_BUDGET = 1000
+PRICE_LEVEL_APPROVAL_ENV = "APPROVE_PRICE_LEVEL_ENRICHMENT"
 
 # Bounding box: [southwest_lat, southwest_lng, northeast_lat, northeast_lng]
 # Rough bounding box for Mission District, San Francisco
@@ -67,7 +69,6 @@ def fetch_places_nearby(lat: float, lng: float, radius: int) -> List[Dict[str, A
             "places.id,"
             "places.displayName,"
             "places.location,"
-            "places.priceLevel,"
             "places.businessStatus,"
             "places.formattedAddress"
         )   
@@ -116,6 +117,63 @@ def fetch_places_nearby(lat: float, lng: float, radius: int) -> List[Dict[str, A
         time.sleep(REQUEST_DELAY_SEC)
 
     return all_results
+
+
+def fetch_place_price_level(place_id: str) -> Any:
+    """Fetch only priceLevel for a single place after dedupe is complete."""
+    global REQUEST_COUNTER
+    url = f"https://places.googleapis.com/v1/places/{place_id}"
+    headers = {
+        "X-Goog-Api-Key": GOOGLE_API_KEY,
+        "X-Goog-FieldMask": "priceLevel"
+    }
+
+    REQUEST_COUNTER += 1
+    response = requests.get(url, headers=headers, timeout=10)
+    response.raise_for_status()
+    data = response.json()
+    return data.get("priceLevel")
+
+
+def enrich_unique_places_with_price_level(unique_places: List[Dict[str, Any]]):
+    projected_detail_calls = len(unique_places)
+
+    logger.info(
+        "Projected follow-up Place Details requests for priceLevel: %s",
+        projected_detail_calls,
+    )
+
+    # IMPORTANT COST SAFETY CHECK:
+    # We cannot safely run this enrichment by default because the free monthly quota is
+    # tight (1,000 API calls/month in this project). Price level must only be fetched when
+    # someone explicitly approves the additional call volume for this run.
+    user_approved = os.getenv(PRICE_LEVEL_APPROVAL_ENV, "").lower() in {"1", "true", "yes"}
+    projected_total_calls = REQUEST_COUNTER + projected_detail_calls
+
+    if not user_approved:
+        logger.warning(
+            "Skipping priceLevel enrichment. Set %s=true to explicitly approve %s additional API calls.",
+            PRICE_LEVEL_APPROVAL_ENV,
+            projected_detail_calls,
+        )
+        return
+
+    if projected_total_calls > MONTHLY_API_CALL_BUDGET:
+        raise RuntimeError(
+            f"Refusing to fetch priceLevel because projected total requests ({projected_total_calls}) "
+            f"exceed monthly budget ({MONTHLY_API_CALL_BUDGET}). Reduce area size or rerun with fewer places."
+        )
+
+    for i, place in enumerate(unique_places, start=1):
+        place_id = place["id"]
+        try:
+            price_level = fetch_place_price_level(place_id)
+            if price_level is not None:
+                place["priceLevel"] = price_level
+            logger.info("Price level enrichment %s/%s complete", i, len(unique_places))
+        except Exception as e:
+            logger.error("Failed to enrich priceLevel for %s: %s", place_id, e)
+        time.sleep(REQUEST_DELAY_SEC)
 
 
 def insert_restaurants(places: List[Dict[str, Any]]):
@@ -169,6 +227,7 @@ def main():
             unique_places.append(p)
 
     logger.info(f"Total unique places fetched: {len(unique_places)}")
+    enrich_unique_places_with_price_level(unique_places)
     insert_restaurants(unique_places)
     logger.info(f"Ingestion complete. Total Google Places API requests: {REQUEST_COUNTER}")
 
